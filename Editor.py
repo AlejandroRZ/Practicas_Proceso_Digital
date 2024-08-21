@@ -1,14 +1,17 @@
 """
-Implementación de un procesador de imagenes que aplica filtros básicos.
+Implementación de un procesador de imágenes que aplica filtros básicos.
 
-Curso de proceso digital de imagenes - semestre 2025-1
+Curso de proceso digital de imágenes - semestre 2025-1
 
 Profesores:
-Manuel Cristobal López Michelone
+Manuel Cristóbal López Michelone
 Yessica Martínez Reyes
-César Hernández Solis
+César Hernández Solís
 
-Versión 1.0
+Alumno:
+Javier Alejandro Rivera Zavala - 311288876
+
+Versión 1.1
 """
 
 from tkinter import *
@@ -138,6 +141,16 @@ def mica_G():
 def mica_B():
     mica_RGB(3)
 
+# Función para guardar la imagen editada.
+def guardar_imagen():
+    if img_editada:
+        # Abre un cuadro de diálogo para guardar la imagen
+        file_path = filedialog.asksaveasfilename(defaultextension=".png",
+                                                 filetypes=[("PNG file", "*.png"), ("JPG file", "*.jpg")])
+        if file_path:
+            img_editada.save(file_path)
+            tk.messagebox.showinfo("Guardado", "Imagen guardada con éxito.")
+
 # Función para evitar que más de un submenú se despliegue al mismo tiempo.
 def ocultar_submenu(event=None):
     global submenu_abierto
@@ -187,6 +200,11 @@ if __name__ == "__main__":
     # Botón para seleccionar la imagen
     btn2 = Button(frame_boton, text="Selecciona la imagen", command=cargar_imagen)
     btn2.pack(side=tk.TOP, fill=tk.X, pady=5)
+
+    # Botón para guardar la imagen editada
+    btn_guardar = Button(frame_boton, text="Guardar imagen editada", command=guardar_imagen)
+    btn_guardar.pack(side=tk.TOP, fill=tk.X, pady=5)
+
 
     # Crear el menú principal
     menu = Menu(root)
