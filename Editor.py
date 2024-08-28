@@ -11,7 +11,7 @@ César Hernández Solís
 Alumno:
 Javier Alejandro Rivera Zavala - 311288876
 
-Versión 1.1
+Versión 1.2
 """
 
 from tkinter import *
@@ -111,6 +111,47 @@ def mica_RGB(version):
         img_editada = img_mica
         mostrar_imagen_editada()  # Mostrar la imagen editada después de aplicar el filtro
 
+def convolucion(matriz_filtr, factor, bias):
+    if img_original:
+        img_convol = Image.new("RGB", img_original.size)        
+        pixels = img_original.load()
+        pixels_conv = img_convol.load()
+        matrix_height = len(matriz_filtr)
+        matrix_width = len(matriz_filtr[0])       
+        
+
+        for columna_img in range(img_original.width):
+            for fila_img in range(img_original.height):
+
+                sum_r, sum_g, sum_b = 0, 0, 0  
+                
+                for fila_matriz in range(matrix_height):
+                    for columna_matriz in range(matrix_width):                        
+
+                        # Calcular la posición del píxel en la imagen
+                        columna_prod = (columna_img - (matrix_width // 2) + columna_matriz) % img_original.width
+                        fila_prod = (fila_img - (matrix_height // 2) + fila_matriz) % img_original.height
+                        
+                        # Obtener el valor del píxel correspondiente
+                        r, g, b = pixels[columna_prod, fila_prod]
+
+                        # Aplicar el filtro (convolución)
+                        sum_r += r * matriz_filtr[fila_matriz][columna_matriz]
+                        sum_g += g * matriz_filtr[fila_matriz][columna_matriz]
+                        sum_b += b * matriz_filtr[fila_matriz][columna_matriz]
+
+                # Asegurarse de que los valores de los píxeles estén en el rango correcto [0, 255]
+                sum_r = min(max(int(factor*sum_r + bias), 0), 255)
+                sum_g = min(max(int(factor*sum_g + bias), 0), 255)
+                sum_b = min(max(int(factor*sum_b + bias), 0), 255)
+
+                # Asignar el nuevo valor al píxel convolucionado
+                pixels_conv[columna_img, fila_img] = (sum_r, sum_g, sum_b)         
+
+        global img_editada
+        img_editada = img_convol
+        mostrar_imagen_editada()  
+
 # Función que controla el menú de filtros disponibles.
 def opcion_seleccionada(opcion):
     global submenu_abierto
@@ -124,6 +165,9 @@ def opcion_seleccionada(opcion):
     elif opcion == "Mica RGB":
         submenu_RGB.post(root.winfo_pointerx(), root.winfo_pointery())
         submenu_abierto = submenu_RGB
+    elif opcion == "Convolución":
+        submenu_Conv.post(root.winfo_pointerx(), root.winfo_pointery())
+        submenu_abierto = submenu_Conv
 
 # Auxiliares para llamar a cada filtro en su respectivo submenú.
 def escala_grises_estandar():
@@ -140,6 +184,79 @@ def mica_G():
 
 def mica_B():
     mica_RGB(3)
+
+def blur():
+    matriz_blur = [
+        [0, 0, 1, 0, 0],
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0],
+        [0, 0, 1, 0, 0]
+    ] 
+    factor = 1.0 / 13.0
+    bias =  0.0 
+    convolucion(matriz_blur, factor, bias)
+
+def motion_blur():
+    matriz_mblur= [
+        [1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1]
+    ]
+    factor = 1.0 / 9.0
+    bias = 0.0
+    convolucion(matriz_mblur, factor, bias)
+
+def border_sharp():
+    matriz_bsharp = [
+        [-1, -1, -1, -1, -1],
+        [-1,  2,  2,  2, -1],
+        [-1,  2,  8,  2, -1],
+        [-1,  2,  2,  2, -1],
+        [-1, -1, -1, -1, -1],
+    ]
+    factor = 1.0 / 8.0
+    bias = 0.0
+    convolucion(matriz_bsharp, factor, bias)
+
+def border_find():
+    matriz_find = [
+        [0,  0, -1,  0,  0],
+        [0,  0, -1,  0,  0],
+        [0,  0,  2,  0,  0],
+        [0,  0,  0,  0,  0],
+        [0,  0,  0,  0,  0]
+    ]
+    factor = 1.0
+    bias = 0.0
+    convolucion(matriz_find, factor, bias)
+
+def emboss():
+    matriz_emb = [
+        [-1, -1,  0],
+        [-1,  0,  1],
+        [0,  1,  1]
+    ]
+    factor = 1.0
+    bias = 128.0
+    convolucion(matriz_emb, factor, bias)
+
+def mean():
+    matriz_mean = [
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1]
+    ] 
+    factor = 1.0 / 9.0;
+    bias = 0.0;
+    convolucion(matriz_mean, factor, bias)
+
 
 # Función para guardar la imagen editada.
 def guardar_imagen():
@@ -221,9 +338,19 @@ if __name__ == "__main__":
     submenu_RGB.add_command(label="Mica verde", command=mica_G)
     submenu_RGB.add_command(label="Mica azul", command=mica_B)
 
+    # Submenú para "Mica RGB"
+    submenu_Conv = Menu(menu, tearoff=0)
+    submenu_Conv.add_command(label="Blur", command=blur)
+    submenu_Conv.add_command(label="Motion blur", command=motion_blur)
+    submenu_Conv.add_command(label="Afinar bordes", command=border_sharp)
+    submenu_Conv.add_command(label="Encontrar bordes", command=border_find)
+    submenu_Conv.add_command(label="Relieve", command=emboss)
+    submenu_Conv.add_command(label="Promedio", command=mean)
+
     # Agregar opciones al menú principal
     menu.add_command(label="Escala de grises", command=lambda: opcion_seleccionada("Escala de grises"))
     menu.add_command(label="Mica RGB", command=lambda: opcion_seleccionada("Mica RGB"))
+    menu.add_command(label="Convolución", command=lambda: opcion_seleccionada("Convolución"))
 
     # Variable global para almacenar la imagen original
     img_original = None
