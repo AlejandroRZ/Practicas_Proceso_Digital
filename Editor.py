@@ -19,48 +19,12 @@ from tkinter import filedialog
 import tkinter as tk
 from PIL import Image, ImageTk
 import os
+from functools import partial
 
-# Carga la imagen a editar.
-def cargar_imagen():
-    # Exploramos en búsqueda de un archivo .png ó .jpg
-    filename = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
-    
-    if filename:
-        #Carga y muestra 2 instancias de la imagen, la vista original y la que muestra el filtro aplicado
-        global img_original, img_editada
-        img_original = Image.open(filename)
-        img_editada = img_original.copy() 
+# ########################################################## Funciones para los filtros ########################################################## #
 
-        mostrar_imagen_original()
-        mostrar_imagen_editada()
+""" Función que implementa 2 filtros de escala de grises."""
 
-# Se encarga de que las imagenes mostradas queden dentró de los limites del marco
-# así como de redimensionarlas para que se muestren completas.
-def ajustar_imagen(img, label):
-    # Obtener el tamaño del frame correspondiente
-    frame_width = label.winfo_width()
-    frame_height = label.winfo_height()
-
-    # Redimensionar la imagen al tamaño del frame, manteniendo la relación de aspecto
-    img.thumbnail((frame_width, frame_height), Image.Resampling.LANCZOS)
-
-    # Convertir la imagen redimensionada a un objeto ImageTk
-    img_tk = ImageTk.PhotoImage(img)
-
-    label.configure(image=img_tk)
-    label.image = img_tk  # Guardar la referencia a la imagen para que no la elimine el recolector de basura.
-
-# Vista de las imagenes.
-
-def mostrar_imagen_original():
-    if img_original:
-        ajustar_imagen(img_original, lbl_original)
-
-def mostrar_imagen_editada():
-    if img_editada:
-        ajustar_imagen(img_editada, lbl_editado)
-
-# Función que implementa 2 filtros de escala de grises.
 def escala_grises(version):
     if img_original:
         # Crear una nueva imagen en modo RGB para almacenar el resultado del filtro
@@ -84,8 +48,9 @@ def escala_grises(version):
         img_editada = img_grises
         mostrar_imagen_editada()  # Mostrar la imagen editada después de aplicar el filtro
 
-# Función que aplica el filtro de mica, es decir, cambia la paleta de colores 
-# de la imagen por una que toma como base a un sólo color RGB.
+""" Función que aplica el filtro de mica, es decir, cambia la paleta de colores 
+    de la imagen por una que toma como base a un sólo color RGB."""
+
 def mica_RGB(version):
     if img_original:
         # Crear una nueva imagen en modo RGB para almacenar el resultado del filtro
@@ -110,6 +75,10 @@ def mica_RGB(version):
         global img_editada
         img_editada = img_mica
         mostrar_imagen_editada()  # Mostrar la imagen editada después de aplicar el filtro
+
+""" Función que define el recorrido de una imagen pixel por pixel y aplica
+    la convolución dada una matriz pertinente, además de un factor y un cesgo 
+    que permiten mantener el brillo base."""
 
 def convolucion(matriz_filtr, factor, bias):
     if img_original:
@@ -152,38 +121,7 @@ def convolucion(matriz_filtr, factor, bias):
         img_editada = img_convol
         mostrar_imagen_editada()  
 
-# Función que controla el menú de filtros disponibles.
-def opcion_seleccionada(opcion):
-    global submenu_abierto
-    # Ocultar el submenú previamente abierto si hay uno
-    if submenu_abierto:
-        submenu_abierto.unpost()
-    
-    if opcion == "Escala de grises":
-        submenu_grises.post(root.winfo_pointerx(), root.winfo_pointery())
-        submenu_abierto = submenu_grises
-    elif opcion == "Mica RGB":
-        submenu_RGB.post(root.winfo_pointerx(), root.winfo_pointery())
-        submenu_abierto = submenu_RGB
-    elif opcion == "Convolución":
-        submenu_Conv.post(root.winfo_pointerx(), root.winfo_pointery())
-        submenu_abierto = submenu_Conv
-
 # Auxiliares para llamar a cada filtro en su respectivo submenú.
-def escala_grises_estandar():
-    escala_grises(1)
-
-def escala_grises_ponderada():
-    escala_grises(2)
-
-def mica_R():
-    mica_RGB(1)
-
-def mica_G():
-    mica_RGB(2)
-
-def mica_B():
-    mica_RGB(3)
 
 def blur():
     matriz_blur = [
@@ -258,7 +196,71 @@ def mean():
     convolucion(matriz_mean, factor, bias)
 
 
-# Función para guardar la imagen editada.
+# ########################################################## Funciones para la interfaz ########################################################## #
+
+""" Función que abre una instancia del explorador de archivos
+    del sistema, para cargar la imagen a editar."""
+
+def cargar_imagen():
+    # Exploramos en búsqueda de un archivo .png ó .jpg
+    filename = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
+    
+    if filename:
+        #Carga y muestra 2 instancias de la imagen, la vista original y la que muestra el filtro aplicado
+        global img_original, img_editada
+        img_original = Image.open(filename)
+        img_editada = img_original.copy() 
+
+        mostrar_imagen_original()
+        mostrar_imagen_editada()
+
+""" Función encargada de que las imagenes mostradas queden dentró de los limites del marco
+    así como de redimensionarlas para que se muestren completas."""
+
+def ajustar_imagen(img, label):
+    # Obtener el tamaño del frame correspondiente
+    frame_width = label.winfo_width()
+    frame_height = label.winfo_height()
+
+    # Redimensionar la imagen al tamaño del frame, manteniendo la relación de aspecto
+    img.thumbnail((frame_width, frame_height), Image.Resampling.LANCZOS)
+
+    # Convertir la imagen redimensionada a un objeto ImageTk
+    img_tk = ImageTk.PhotoImage(img)
+
+    label.configure(image=img_tk)
+    label.image = img_tk  # Guardar la referencia a la imagen para que no la elimine el recolector de basura.
+
+# Vista de las imagenes.
+
+def mostrar_imagen_original():
+    if img_original:
+        ajustar_imagen(img_original, lbl_original)
+
+def mostrar_imagen_editada():
+    if img_editada:
+        ajustar_imagen(img_editada, lbl_editado)
+
+""" Función que controla el menú de filtros disponibles."""
+
+def opcion_seleccionada(opcion):
+    global submenu_abierto
+    # Ocultar el submenú previamente abierto si hay uno
+    if submenu_abierto:
+        submenu_abierto.unpost()
+    
+    if opcion == "Escala de grises":
+        submenu_grises.post(root.winfo_pointerx(), root.winfo_pointery())
+        submenu_abierto = submenu_grises
+    elif opcion == "Mica RGB":
+        submenu_RGB.post(root.winfo_pointerx(), root.winfo_pointery())
+        submenu_abierto = submenu_RGB
+    elif opcion == "Convolución":
+        submenu_Conv.post(root.winfo_pointerx(), root.winfo_pointery())
+        submenu_abierto = submenu_Conv
+
+""" Función para guardar la imagen editada."""
+
 def guardar_imagen():
     if img_editada:
         # Abre un cuadro de diálogo para guardar la imagen
@@ -268,12 +270,14 @@ def guardar_imagen():
             img_editada.save(file_path)
             tk.messagebox.showinfo("Guardado", "Imagen guardada con éxito.")
 
-# Función para evitar que más de un submenú se despliegue al mismo tiempo.
+""" Función para evitar que más de un submenú se despliegue al mismo tiempo."""
 def ocultar_submenu(event=None):
     global submenu_abierto
     if submenu_abierto:
         submenu_abierto.unpost()
         submenu_abierto = None
+
+# ########################################################## Entrada en ejecución ########################################################## #
 
 if __name__ == "__main__":
     global root, img_original, img_editada, submenu_grises, submenu_RGB, submenu_abierto
@@ -329,14 +333,14 @@ if __name__ == "__main__":
 
     # Submenú para "Escala de grises"
     submenu_grises = Menu(menu, tearoff=0)
-    submenu_grises.add_command(label="Escala estandar", command=escala_grises_estandar)
-    submenu_grises.add_command(label="Escala ponderada", command=escala_grises_ponderada)
+    submenu_grises.add_command(label="Escala estandar", command=partial(escala_grises, 1))
+    submenu_grises.add_command(label="Escala ponderada", command=partial(escala_grises, 2))
 
     # Submenú para "Mica RGB"
     submenu_RGB = Menu(menu, tearoff=0)
-    submenu_RGB.add_command(label="Mica roja", command=mica_R)
-    submenu_RGB.add_command(label="Mica verde", command=mica_G)
-    submenu_RGB.add_command(label="Mica azul", command=mica_B)
+    submenu_RGB.add_command(label="Mica roja", command=partial(mica_RGB, 1))
+    submenu_RGB.add_command(label="Mica verde", command=partial(mica_RGB, 2))
+    submenu_RGB.add_command(label="Mica azul", command=partial(mica_RGB,3))
 
     # Submenú para "Mica RGB"
     submenu_Conv = Menu(menu, tearoff=0)
