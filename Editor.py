@@ -16,10 +16,11 @@ Versión 1.2
 
 from tkinter import *
 from tkinter import filedialog
-import tkinter as tk
 from PIL import Image, ImageTk
-import os
 from functools import partial
+import tkinter as tk
+import os
+
 
 # ########################################################## Funciones para los filtros ########################################################## #
 
