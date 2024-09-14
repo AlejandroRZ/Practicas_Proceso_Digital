@@ -20,8 +20,7 @@ from PIL import Image, ImageTk
 from functools import partial
 import tkinter as tk
 import os
-
-
+import ProcesoRecursivo 
 # ########################################################## Funciones para los filtros ########################################################## #
 
 """ Función que implementa 2 filtros de escala de grises."""
@@ -196,12 +195,20 @@ def mean():
     bias = 0.0;
     convolution(mean_matrix, factor, bias)
 
+def recursive_image_generate(val):
+    if original_image:
+        print("Si entré")
+        global edited_image
+        edited_image = ProcesoRecursivo.recursive_image_generation(val, original_image)
+        show_edited_image()
+        
+
 # ########################################################## Funciones para la interfaz ########################################################## #
 
 """ Función que abre una instancia del explorador de archivos
     del sistema, para cargar la imagen a editar."""
 
-def load_imagen():
+def load_image():
     # Exploramos en búsqueda de un archivo .png ó .jpg
     filename = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
     
@@ -258,6 +265,12 @@ def selected_option(option):
     elif option == "Convolución":
         conv_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
         opened_submenu = conv_submenu
+    elif option == "Filtros recursivos":
+        print('Si entré en el elif')
+        recursive_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
+        opened_submenu = recursive_submenu
+
+
 
 """ Función para guardar la imagen editada."""
 
@@ -277,7 +290,7 @@ def hide_submenu(event=None):
         opened_submenu.unpost()
         opened_submenu = None
 
-# ########################################################## Entrada en ejecución ########################################################## #
+# ########################################################## Construcción de la interfaz ########################################################## #
 
 if __name__ == "__main__":
     global root, original_image, edited_image, grey_submenu, RGB_submenu, opened_submenu
@@ -319,7 +332,7 @@ if __name__ == "__main__":
     button_frame.pack(side=RIGHT, fill=Y, padx=15, pady=15)
 
     # Botón para seleccionar la imagen
-    btn2 = Button(button_frame, text="Selecciona la imagen", command=load_imagen)
+    btn2 = Button(button_frame, text="Selecciona la imagen", command=load_image)
     btn2.pack(side=tk.TOP, fill=tk.X, pady=5)
 
     # Botón para guardar la imagen editada
@@ -351,10 +364,15 @@ if __name__ == "__main__":
     conv_submenu.add_command(label="Relieve", command=emboss)
     conv_submenu.add_command(label="Promedio", command=mean)
 
+    # Submenú para "Filtros recursivos"
+    recursive_submenu = Menu(menu, tearoff=0)
+    recursive_submenu.add_command(label="Recursivo grises", command=partial(recursive_image_generate, 1))
+   
     # Agregar opciones al menú principal
     menu.add_command(label="Escala de grises", command=lambda: selected_option("Escala de grises"))
     menu.add_command(label="Mica RGB", command=lambda: selected_option("Mica RGB"))
     menu.add_command(label="Convolución", command=lambda: selected_option("Convolución"))
+    menu.add_command(label="Filtros recursivos", command=lambda: selected_option("Filtros recursivos"))
 
     # Variable global para almacenar la imagen original
     original_image = None
@@ -363,5 +381,8 @@ if __name__ == "__main__":
 
     # Bind para ocultar el submenú al hacer clic en cualquier parte de la ventana
     root.bind("<Button-1>", hide_submenu)
-
+  
     root.mainloop()
+
+
+   
