@@ -11,235 +11,59 @@ César Hernández Solís
 Alumno:
 Javier Alejandro Rivera Zavala - 311288876
 
-Versión 1.2
+Versión 1.5
 """
-
-from tkinter import *
-from tkinter import filedialog
+from tkinter import filedialog, Tk, Frame, Label, Menu, Button, LEFT, RIGHT, BOTH, Y 
 from PIL import Image, ImageTk
 from functools import partial
 import tkinter as tk
 import os
-
-
-# ########################################################## Funciones para los filtros ########################################################## #
-
-""" Función que implementa 2 filtros de escala de grises."""
-
-def grey_scale(version):
-    if original_image:
-        # Crear una nueva imagen en modo RGB para almacenar el resultado del filtro
-        grey_img = Image.new("RGB", original_image.size)
-
-        # Obtener los datos de píxeles de la imagen original
-        pixels = original_image.load()
-        grey_pixels = grey_img.load()
-
-        # Recorre la imagen pixel a pixel y les aplica la formula de la media ó de la media
-        # ponderada para convertir a escala de grises.        
-        for i in range(original_image.width):
-            for j in range(original_image.height):
-                r, g, b = pixels[i, j]
-                grey = (r + g + b) // 3
-                if version == 2:
-                    grey = int(r*0.299 + g*0.587 + b*0.114)
-                grey_pixels[i, j] = (grey, grey, grey)
-
-        global edited_image
-        edited_image = grey_img
-        show_edited_image()  # Mostrar la imagen editada después de aplicar el filtro
-
-""" Función que aplica el filtro de mica, es decir, cambia la paleta de colores 
-    de la imagen por una que toma como base a un sólo color RGB."""
-
-def RGB_glass(version):
-    if original_image:
-        # Crear una nueva imagen en modo RGB para almacenar el resultado del filtro
-        glass_image = Image.new("RGB", original_image.size)
-
-        # Obtener los datos de píxeles de la imagen original
-        pixels = original_image.load()
-        rgb_pixels = glass_image.load()
-
-        # Recorre la imagen pixel a pixel y mantiene únicamente un valor de los bytes RGB
-        # los 2 restantes los establece en cero.  
-        for i in range(original_image.width):
-            for j in range(original_image.height):
-                r, g, b = pixels[i, j]
-                if version == 1:
-                    rgb_pixels[i, j] = (r, 0, 0)
-                elif version == 2:
-                    rgb_pixels[i, j] = (0, g, 0)
-                else:
-                    rgb_pixels[i, j] = (0, 0, b)
-
-        global edited_image
-        edited_image = glass_image
-        show_edited_image()  # Mostrar la imagen editada después de aplicar el filtro
-
-""" Función que define el recorrido de una imagen pixel por pixel y aplica
-    la convolución dada una matriz pertinente, además de un factor y un cesgo 
-    que permiten mantener el brillo base."""
-
-def convolution(matrix_filtr, factor, bias):
-    if original_image:
-        convol_img = Image.new("RGB", original_image.size)        
-        pixels = original_image.load()
-        convol_pixels = convol_img.load()
-        matrix_height = len(matrix_filtr)
-        matrix_width = len(matrix_filtr[0])       
-        
-
-        for img_column in range(original_image.width):
-            for img_row in range(original_image.height):
-
-                sum_r, sum_g, sum_b = 0, 0, 0  
-                
-                for matrix_row in range(matrix_height):
-                    for matrix_column in range(matrix_width):                        
-
-                        # Calcular la posición del píxel en la imagen
-                        prod_column = (img_column - (matrix_width // 2) + matrix_column) % original_image.width
-                        prod_row = (img_row - (matrix_height // 2) + matrix_row) % original_image.height
-                        
-                        # Obtener el valor del píxel correspondiente
-                        r, g, b = pixels[prod_column, prod_row]
-
-                        # Aplicar el filtro (convolución)
-                        sum_r += r * matrix_filtr[matrix_row][matrix_column]
-                        sum_g += g * matrix_filtr[matrix_row][matrix_column]
-                        sum_b += b * matrix_filtr[matrix_row][matrix_column]
-
-                # Asegurarse de que los valores de los píxeles estén en el rango correcto [0, 255]
-                sum_r = min(max(int(factor*sum_r + bias), 0), 255)
-                sum_g = min(max(int(factor*sum_g + bias), 0), 255)
-                sum_b = min(max(int(factor*sum_b + bias), 0), 255)
-
-                # Asignar el nuevo valor al píxel convolutionado
-                convol_pixels[img_column, img_row] = (sum_r, sum_g, sum_b)         
-
-        global edited_image
-        edited_image = convol_img
-        show_edited_image()  
-
-# Auxiliares para llamar a cada filtro en su respectivo submenú.
-
-def blur():
-    blur_matrix = [
-        [0, 0, 1, 0, 0],
-        [0, 1, 1, 1, 0],
-        [1, 1, 1, 1, 1],
-        [0, 1, 1, 1, 0],
-        [0, 0, 1, 0, 0]
-    ] 
-    factor = 1.0 / 13.0
-    bias =  0.0 
-    convolution(blur_matrix, factor, bias)
-
-def motion_blur():
-    mblur_matrix= [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1]
-    ]
-    factor = 1.0 / 9.0
-    bias = 0.0
-    convolution(mblur_matrix, factor, bias)
-
-def border_sharp():
-    bsharp_matrix = [
-        [-1, -1, -1, -1, -1],
-        [-1,  2,  2,  2, -1],
-        [-1,  2,  8,  2, -1],
-        [-1,  2,  2,  2, -1],
-        [-1, -1, -1, -1, -1],
-    ]
-    factor = 1.0 / 8.0
-    bias = 0.0
-    convolution(bsharp_matrix, factor, bias)
-
-def border_find():
-    bfind_matrix = [
-        [0,  0, -1,  0,  0],
-        [0,  0, -1,  0,  0],
-        [0,  0,  2,  0,  0],
-        [0,  0,  0,  0,  0],
-        [0,  0,  0,  0,  0]
-    ]
-    factor = 1.0
-    bias = 0.0
-    convolution(bfind_matrix, factor, bias)
-
-def emboss():
-    emb_matrix = [
-        [-1, -1,  0],
-        [-1,  0,  1],
-        [0,  1,  1]
-    ]
-    factor = 1.0
-    bias = 128.0
-    convolution(emb_matrix, factor, bias)
-
-def mean():
-    mean_matrix = [
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1]
-    ] 
-    factor = 1.0 / 9.0;
-    bias = 0.0;
-    convolution(mean_matrix, factor, bias)
+import FiltrosRecursivos, FiltrosBasicos, FiltrosConvolucion 
 
 # ########################################################## Funciones para la interfaz ########################################################## #
 
-""" Función que abre una instancia del explorador de archivos
-    del sistema, para cargar la imagen a editar."""
 
-def load_imagen():
-    # Exploramos en búsqueda de un archivo .png ó .jpg
+def load_image():
+    global original_image, displayed_image, edited_image, displayed_edited_image
     filename = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
     
     if filename:
-        #Carga y muestra 2 instancias de la imagen, la vista original y la que muestra el filtro aplicado
-        global original_image, edited_image
+        # Carga la imagen original a tamaño completo
         original_image = Image.open(filename)
-        edited_image = original_image.copy() 
+        edited_image = original_image.copy()  # Mantén la imagen editada sin redimensionar
+        displayed_image = original_image.copy()
+        displayed_edited_image = original_image.copy()  # Imagen que será redimensionada solo para mostrarla
 
         show_original_image()
         show_edited_image()
+        root.resizable(False, False)
 
-""" Función encargada de que las imagenes mostradas queden dentró de los limites del marco
-    así como de redimensionarlas para que se muestren completas."""
+# Función que ajusta la imagen cuando cambia el tamaño del frame
+def fit_image(image, label):
+    if image:
+        # Obtener el tamaño del frame correspondiente
+        frame_width = label.winfo_width()
+        frame_height = label.winfo_height()
 
-def fit_image(img, label):
-    # Obtener el tamaño del frame correspondiente
-    frame_width = label.winfo_width()
-    frame_height = label.winfo_height()
+        # Redimensionar una copia de la imagen al tamaño del frame, manteniendo la relación de aspecto        
+        image.thumbnail((frame_width, frame_height), Image.Resampling.LANCZOS)
 
-    # Redimensionar la imagen al tamaño del frame, manteniendo la relación de aspecto
-    img.thumbnail((frame_width, frame_height), Image.Resampling.LANCZOS)
+        # Convertir la imagen redimensionada a un objeto ImageTk
+        img_tk = ImageTk.PhotoImage(image)
 
-    # Convertir la imagen redimensionada a un objeto ImageTk
-    img_tk = ImageTk.PhotoImage(img)
+        label.configure(image=img_tk)
+        label.image = img_tk  # Guardar la referencia a la imagen para que no la elimine el recolector de basura.
 
-    label.configure(image=img_tk)
-    label.image = img_tk  # Guardar la referencia a la imagen para que no la elimine el recolector de basura.
-
-# Vista de las imagenes.
-
+# Función para mostrar la imagen original redimensionada
 def show_original_image():
     if original_image:
-        fit_image(original_image, original_lbl)
+        fit_image(displayed_image, original_lbl)
 
+# Función para mostrar la imagen editada redimensionada
 def show_edited_image():
     if edited_image:
-        fit_image(edited_image, edited_lbl)
+        fit_image(displayed_edited_image, edited_lbl)
+
 
 """ Función que controla el menú de filtros disponibles."""
 
@@ -258,6 +82,11 @@ def selected_option(option):
     elif option == "Convolución":
         conv_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
         opened_submenu = conv_submenu
+    elif option == "Filtros recursivos":        
+        recursive_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
+        opened_submenu = recursive_submenu
+
+
 
 """ Función para guardar la imagen editada."""
 
@@ -277,10 +106,37 @@ def hide_submenu(event=None):
         opened_submenu.unpost()
         opened_submenu = None
 
-# ########################################################## Entrada en ejecución ########################################################## #
+def grey_scale_visual(version):
+    global edited_image, displayed_edited_image
+    edited_image = FiltrosBasicos.grey_scale(original_image, version)
+    displayed_edited_image = edited_image.copy()
+    show_edited_image()
+
+def rgb_glass_visual(version):
+    global edited_image, displayed_edited_image
+    edited_image = FiltrosBasicos.rgb_glass(original_image, version)
+    displayed_edited_image = edited_image.copy()
+    show_edited_image()
+
+def convolution_visual(version):
+    global edited_image, displayed_edited_image
+    edited_image = FiltrosConvolucion.convolution(original_image, version)
+    displayed_edited_image = edited_image.copy()
+    show_edited_image()
+
+def recursive_image_visual(version):
+    if original_image:        
+        global edited_image,  displayed_edited_image
+        edited_image = FiltrosRecursivos.recursive_image_generation(version, original_image)
+        displayed_edited_image = edited_image.copy()
+        show_edited_image()
+
+
+
+# ########################################################## Construcción de la interfaz ########################################################## #
 
 if __name__ == "__main__":
-    global root, original_image, edited_image, grey_submenu, RGB_submenu, opened_submenu
+    global root, original_image, edited_image, displayed_image, displayed_edited_image, grey_submenu, RGB_submenu, opened_submenu
     root = Tk()    
     root.title("Editor Morsa")    
     
@@ -313,13 +169,13 @@ if __name__ == "__main__":
     # Label para mostrar la imagen editada
     edited_lbl = Label(edited_frame)
     edited_lbl.pack(expand=True, fill=BOTH)
-
+   
     # Frame para los botones (lado derecho)
     button_frame = Frame(root)
     button_frame.pack(side=RIGHT, fill=Y, padx=15, pady=15)
 
     # Botón para seleccionar la imagen
-    btn2 = Button(button_frame, text="Selecciona la imagen", command=load_imagen)
+    btn2 = Button(button_frame, text="Selecciona la imagen", command=load_image)
     btn2.pack(side=tk.TOP, fill=tk.X, pady=5)
 
     # Botón para guardar la imagen editada
@@ -333,35 +189,46 @@ if __name__ == "__main__":
 
     # Submenú para "Escala de grises"
     grey_submenu = Menu(menu, tearoff=0)
-    grey_submenu.add_command(label="Escala estandar", command=partial(grey_scale, 1))
-    grey_submenu.add_command(label="Escala ponderada", command=partial(grey_scale, 2))
+    grey_submenu.add_command(label="Escala estandar", command=partial(grey_scale_visual, 1))
+    grey_submenu.add_command(label="Escala ponderada", command=partial(grey_scale_visual, 2))
 
     # Submenú para "Mica RGB"
     RGB_submenu = Menu(menu, tearoff=0)
-    RGB_submenu.add_command(label="Mica roja", command=partial(RGB_glass, 1))
-    RGB_submenu.add_command(label="Mica verde", command=partial(RGB_glass, 2))
-    RGB_submenu.add_command(label="Mica azul", command=partial(RGB_glass,3))
+    RGB_submenu.add_command(label="Mica roja", command=partial(rgb_glass_visual, 1))
+    RGB_submenu.add_command(label="Mica verde", command=partial(rgb_glass_visual, 2))
+    RGB_submenu.add_command(label="Mica azul", command=partial(rgb_glass_visual,3))
 
     # Submenú para "Mica RGB"
     conv_submenu = Menu(menu, tearoff=0)
-    conv_submenu.add_command(label="Blur", command=blur)
-    conv_submenu.add_command(label="Motion blur", command=motion_blur)
-    conv_submenu.add_command(label="Afinar bordes", command=border_sharp)
-    conv_submenu.add_command(label="Encontrar bordes", command=border_find)
-    conv_submenu.add_command(label="Relieve", command=emboss)
-    conv_submenu.add_command(label="Promedio", command=mean)
+    conv_submenu.add_command(label="Blur", command=partial(convolution_visual, 1))
+    conv_submenu.add_command(label="Motion blur", command=partial(convolution_visual, 2))
+    conv_submenu.add_command(label="Afinar bordes", command=partial(convolution_visual, 3))
+    conv_submenu.add_command(label="Encontrar bordes", command=partial(convolution_visual, 4))
+    conv_submenu.add_command(label="Relieve", command=partial(convolution_visual, 5))
+    conv_submenu.add_command(label="Promedio", command=partial(convolution_visual, 6))
 
+    # Submenú para "Filtros recursivos"
+    recursive_submenu = Menu(menu, tearoff=0)
+    recursive_submenu.add_command(label="Recursivo grises", command=partial(recursive_image_visual, 1))
+    recursive_submenu.add_command(label="Recursivo colores", command=partial(recursive_image_visual, 2))
+   
     # Agregar opciones al menú principal
     menu.add_command(label="Escala de grises", command=lambda: selected_option("Escala de grises"))
     menu.add_command(label="Mica RGB", command=lambda: selected_option("Mica RGB"))
     menu.add_command(label="Convolución", command=lambda: selected_option("Convolución"))
+    menu.add_command(label="Filtros recursivos", command=lambda: selected_option("Filtros recursivos"))
 
     # Variable global para almacenar la imagen original
     original_image = None
     edited_image = None
+    displayed_image = None
+    displayed_original_image = None   
     opened_submenu = None  # Variable global para rastrear el submenú abierto
 
     # Bind para ocultar el submenú al hacer clic en cualquier parte de la ventana
     root.bind("<Button-1>", hide_submenu)
-
+  
     root.mainloop()
+
+
+   
