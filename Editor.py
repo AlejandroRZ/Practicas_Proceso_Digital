@@ -18,7 +18,7 @@ from PIL import Image, ImageTk
 from functools import partial
 import tkinter as tk
 import os
-import FiltrosRecursivos, FiltrosBasicos, FiltrosConvolucion 
+import FiltrosRecursivos, FiltrosBasicos, FiltrosConvolucion, MarcaAgua 
 
 # ########################################################## Funciones para la interfaz ########################################################## #
 
@@ -85,6 +85,9 @@ def selected_option(option):
     elif option == "Filtros recursivos":        
         recursive_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
         opened_submenu = recursive_submenu
+    elif option == "Marca de agua":
+        watermark_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
+        opened_submenu = watermark_submenu
 
 
 
@@ -125,9 +128,19 @@ def convolution_visual(version):
     show_edited_image()
 
 def recursive_image_visual(version):
+    if original_image:                
+        global edited_image,  displayed_edited_image        
+        file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para el mosaico", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
+        if file_name:
+            filler_image = Image.open(file_name)
+            edited_image = FiltrosRecursivos.recursive_image_generation(original_image, filler_image, version)
+            displayed_edited_image = edited_image.copy()
+            show_edited_image()
+
+def watermark(version):
     if original_image:        
         global edited_image,  displayed_edited_image
-        edited_image = FiltrosRecursivos.recursive_image_generation(version, original_image)
+        edited_image = MarcaAgua.add_image_watermark(original_image, version)
         displayed_edited_image = edited_image.copy()
         show_edited_image()
 
@@ -140,8 +153,8 @@ if __name__ == "__main__":
     root = Tk()    
     root.title("Editor Morsa")    
     
-    window_width = 1000
-    window_height = 500
+    window_width = 1050
+    window_height = 550
 
     # Obtener el tamaño de la pantalla
     screen_width = root.winfo_screenwidth()
@@ -211,12 +224,20 @@ if __name__ == "__main__":
     recursive_submenu = Menu(menu, tearoff=0)
     recursive_submenu.add_command(label="Recursivo grises", command=partial(recursive_image_visual, 1))
     recursive_submenu.add_command(label="Recursivo colores", command=partial(recursive_image_visual, 2))
+
+    #Submenú para marca de agua
+    watermark_submenu = Menu(menu, tearoff=0)
+    watermark_submenu.add_command(label="Marca repetitiva", command=partial(watermark, 1))
+    watermark_submenu.add_command(label="Marca centrada", command=partial(watermark, 2))
+
+
    
     # Agregar opciones al menú principal
     menu.add_command(label="Escala de grises", command=lambda: selected_option("Escala de grises"))
     menu.add_command(label="Mica RGB", command=lambda: selected_option("Mica RGB"))
     menu.add_command(label="Convolución", command=lambda: selected_option("Convolución"))
     menu.add_command(label="Filtros recursivos", command=lambda: selected_option("Filtros recursivos"))
+    menu.add_command(label="Marca de agua", command=lambda: selected_option("Marca de agua"))
 
     # Variable global para almacenar la imagen original
     original_image = None

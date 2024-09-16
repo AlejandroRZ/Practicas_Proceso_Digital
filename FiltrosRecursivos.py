@@ -1,69 +1,63 @@
-from tkinter import filedialog
 from PIL import Image
-import os, csv, ast, math 
+import csv, ast, math 
 
 
-def recursive_image_generation(version, reference_image):
+def recursive_image_generation(reference_image, filler_image, version):
     
-    if reference_image:        
-        filename = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para el mosaico", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
+    if reference_image and filler_image:    
+        recursive_image = Image.new("RGB", reference_image.size)            
+        image_list = []
+        tile_width = 15
+        tile_height = 15
+
+        if version == 1:                
+            original_pixels = reference_image.load()
+            recursive_pixels = recursive_image.load()
+            filler_pixels = filler_image.load()
+
+            for i in range(reference_image.width):
+                for j in range(reference_image.height):
+                    r, g, b = original_pixels[i, j]                            
+                    grey = int(r*0.299 + g*0.587 + b*0.114)                        
+                    recursive_pixels[i, j] = (grey, grey, grey)                
+            
+            for i in range(filler_image.width):
+                for j in range(filler_image.height):
+                    r_fill, g_fill, b_fill = filler_pixels[i, j]
+                    grey_fill = int(r_fill*0.299 + g_fill*0.587 + b_fill*0.114) #Aquí el filler se pasó a gris
+                    filler_pixels[i, j] = (grey_fill, grey_fill, grey_fill)         
+
+            for i in range (30): 
+                factor = ((i + 1.0) / 15.0) ** 2                
+                temp_img = filler_image.copy().resize((tile_width, tile_height), Image.Resampling.LANCZOS)
+                temp_pixels = temp_img.load()                      
+                brightness_mod(temp_img, temp_pixels, factor)                   
+                image_list.append(temp_img)                    # Definir el tamaño de las celdas del mosaico (por ejemplo, 10x10 píxeles)             
         
-        if filename: 
-            filler_image = Image.open(filename)
-            recursive_image = Image.new("RGB", reference_image.size)            
-            image_list = []
-            tile_width = 15
-            tile_height = 15
-
-            if version == 1:                
-                original_pixels = reference_image.load()
-                recursive_pixels = recursive_image.load()
-                filler_pixels = filler_image.load()
-
-                for i in range(reference_image.width):
-                    for j in range(reference_image.height):
-                        r, g, b = original_pixels[i, j]                            
-                        grey = int(r*0.299 + g*0.587 + b*0.114)                        
-                        recursive_pixels[i, j] = (grey, grey, grey)                
-               
-                for i in range(filler_image.width):
-                    for j in range(filler_image.height):
-                        r_fill, g_fill, b_fill = filler_pixels[i, j]
-                        grey_fill = int(r_fill*0.299 + g_fill*0.587 + b_fill*0.114) #Aquí el filler se pasó a gris
-                        filler_pixels[i, j] = (grey_fill, grey_fill, grey_fill)         
-
-                for i in range (30): 
-                    factor = ((i + 1.0) / 15.0) ** 2
-                    temp_img = filler_image.copy().resize((tile_width, tile_height))
-                    temp_pixels = temp_img.load()                    
-                    brightness_mod(temp_img, temp_pixels, factor)                   
-                    image_list.append(temp_img)                    # Definir el tamaño de las celdas del mosaico (por ejemplo, 10x10 píxeles)             
-           
-            elif version == 2:                 
-                webpalette_rgb_codes = []
-                recursive_image = reference_image                
+        elif version == 2:                 
+            webpalette_rgb_codes = []                        
+            
+            with open('WebPalette.csv', mode='r') as csv_file_palette:
+                reader = csv.DictReader(csv_file_palette)    
                 
-                with open('WebPalette.csv', mode='r') as csv_file_palette:
-                    reader = csv.DictReader(csv_file_palette)    
-                    
-                    for row in reader:                       
-                        triplet = ast.literal_eval(row['rgb_values'])
-                        webpalette_rgb_codes.append(triplet)
+                for row in reader:                       
+                    triplet = ast.literal_eval(row['rgb_values'])
+                    webpalette_rgb_codes.append(triplet)
+            
+            # Aplicar el filtro de color a la imagen y guardar las copias
+            for i, color in enumerate(webpalette_rgb_codes):
+                filtered_image = color_filter(filler_image.copy().resize((tile_width, tile_height), Image.Resampling.LANCZOS), color)             
+                image_list.append((color, filtered_image))
                 
-                # Aplicar el filtro de color a la imagen y guardar las copias
-                for i, color in enumerate(webpalette_rgb_codes):
-                    filtered_image = color_filter(filler_image.copy().resize((tile_width, tile_height)), color)
-                    image_list.append((color, filtered_image))
-                   
-            for i in range(0, recursive_image.width, tile_width):                    
-                for j in range(0, recursive_image.height, tile_height):                    
-                    block_width = min(tile_width, recursive_image.width - i)
-                    block_height = min(tile_height, recursive_image.height - j)                                         
-                    zone_color = get_average_color(recursive_image, i, j, block_width, block_height, version)
-                    best_thumbnail = select_best_thumbnail(image_list, zone_color, version)                    
-                    recursive_image.paste(best_thumbnail, (i, j))     
+        for i in range(0, recursive_image.width, tile_width):                    
+            for j in range(0, recursive_image.height, tile_height):                    
+                block_width = min(tile_width, recursive_image.width - i)
+                block_height = min(tile_height, recursive_image.height - j)                                         
+                zone_color = get_average_color(reference_image, i, j, block_width, block_height, version)
+                best_thumbnail = select_best_thumbnail(image_list, zone_color, version)                    
+                recursive_image.paste(best_thumbnail, (i, j))     
 
-        return recursive_image
+    return recursive_image
                                       
 
            
