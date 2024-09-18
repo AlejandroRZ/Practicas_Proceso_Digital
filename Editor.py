@@ -11,55 +11,55 @@ César Hernández Solís
 Alumno:
 Javier Alejandro Rivera Zavala - 311288876
 
-Versión 1.5
+Versión 2.0
 """
 from tkinter import filedialog, Tk, Frame, Label, Menu, Button, LEFT, RIGHT, BOTH, Y 
 from PIL import Image, ImageTk
 from functools import partial
 import tkinter as tk
 import os
-import FiltrosRecursivos, FiltrosBasicos, FiltrosConvolucion, MarcaAgua 
+import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, MarcaAgua 
 
 # ########################################################## Funciones para la interfaz ########################################################## #
 
+""" Función para cargar una imagen desde el sistema de archivos. """
 
 def load_image():
     global original_image, displayed_image, edited_image, displayed_edited_image
     filename = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
     
-    if filename:
-        # Carga la imagen original a tamaño completo
-        original_image = Image.open(filename)
+    if filename:       
+        original_image = Image.open(filename) # Carga la imagen original a tamaño completo
         edited_image = original_image.copy()  # Mantén la imagen editada sin redimensionar
-        displayed_image = original_image.copy()
+        displayed_image = original_image.copy()        
         displayed_edited_image = original_image.copy()  # Imagen que será redimensionada solo para mostrarla
-
+        
         show_original_image()
         show_edited_image()
+        
         root.resizable(False, False)
 
-# Función que ajusta la imagen cuando cambia el tamaño del frame
-def fit_image(image, label):
-    if image:
-        # Obtener el tamaño del frame correspondiente
+""" Función que ajusta la imagen cuando cambia el tamaño del frame. """
+
+def fit_image(image, label):    
+    if image:                               # Obtener el tamaño del frame correspondiente
         frame_width = label.winfo_width()
         frame_height = label.winfo_height()
-
-        # Redimensionar una copia de la imagen al tamaño del frame, manteniendo la relación de aspecto        
-        image.thumbnail((frame_width, frame_height), Image.Resampling.LANCZOS)
-
-        # Convertir la imagen redimensionada a un objeto ImageTk
-        img_tk = ImageTk.PhotoImage(image)
-
+        image.thumbnail((frame_width, frame_height), Image.Resampling.LANCZOS)  # Redimensionar una copia de la imagen al tamaño del frame, manteniendo la relación de aspecto  
+        
+        img_tk = ImageTk.PhotoImage(image) # Convertir la imagen redimensionada a un objeto ImageTk
         label.configure(image=img_tk)
-        label.image = img_tk  # Guardar la referencia a la imagen para que no la elimine el recolector de basura.
 
-# Función para mostrar la imagen original redimensionada
+        label.image = img_tk  # Guardar la referencia a la imagen para que no la elimine el recolector de basura
+
+""" Función para mostrar la imagen original redimensionada. """
+
 def show_original_image():
     if original_image:
         fit_image(displayed_image, original_lbl)
 
-# Función para mostrar la imagen editada redimensionada
+""" Función para mostrar la imagen editada redimensionada """
+
 def show_edited_image():
     if edited_image:
         fit_image(displayed_edited_image, edited_lbl)
@@ -69,22 +69,26 @@ def show_edited_image():
 
 def selected_option(option):
     global opened_submenu
-    # Ocultar el submenú previamente abierto si hay uno
+                        # Ocultar el submenú previamente abierto si hay uno
     if opened_submenu:
         opened_submenu.unpost()
     
     if option == "Escala de grises":
         grey_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
         opened_submenu = grey_submenu
+
     elif option == "Mica RGB":
         RGB_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
         opened_submenu = RGB_submenu
+
     elif option == "Convolución":
         conv_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
         opened_submenu = conv_submenu
+
     elif option == "Filtros recursivos":        
         recursive_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
         opened_submenu = recursive_submenu
+
     elif option == "Marca de agua":
         watermark_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
         opened_submenu = watermark_submenu
@@ -94,55 +98,89 @@ def selected_option(option):
 """ Función para guardar la imagen editada."""
 
 def save_image():
-    if edited_image:
-        # Abre un cuadro de diálogo para guardar la imagen
-        file_path = filedialog.asksaveasfilename(defaultextension=".png",
+    if edited_image:        # Abre un cuadro de diálogo para guardar la imagen
+        file_path = filedialog.asksaveasfilename(defaultextension=".png",   
                                                  filetypes=[("PNG file", "*.png"), ("JPG file", "*.jpg")])
         if file_path:
             edited_image.save(file_path)
             tk.messagebox.showinfo("Guardado", "Imagen guardada con éxito.")
 
 """ Función para evitar que más de un submenú se despliegue al mismo tiempo."""
+
 def hide_submenu(event=None):
     global opened_submenu
+
     if opened_submenu:
         opened_submenu.unpost()
         opened_submenu = None
 
+""" 
+Interfaz para el filtro de escala de grises.
+Recibe la versión del filtro que se va a aplicar.
+"""
 def grey_scale_visual(version):
-    global edited_image, displayed_edited_image
-    edited_image = FiltrosBasicos.grey_scale(original_image, version)
-    displayed_edited_image = edited_image.copy()
-    show_edited_image()
+    if original_image:
+        global edited_image, displayed_edited_image
+        edited_image = FiltrosBasicos.grey_scale(original_image, version)
+        displayed_edited_image = edited_image.copy()
+        
+        show_edited_image()
 
+""" 
+Interfaz para el filtro de mica RGB.
+Recibe la versión del filtro que se va a aplicar.
+"""
 def rgb_glass_visual(version):
-    global edited_image, displayed_edited_image
-    edited_image = FiltrosBasicos.rgb_glass(original_image, version)
-    displayed_edited_image = edited_image.copy()
-    show_edited_image()
+    if original_image:
+        global edited_image, displayed_edited_image
+        edited_image = FiltrosBasicos.rgb_glass(original_image, version)
+        displayed_edited_image = edited_image.copy()
+       
+        show_edited_image()
 
+""" 
+Interfaz para los filtros por convolución.
+Recibe la versión del filtro que se va a aplicar.
+"""
 def convolution_visual(version):
-    global edited_image, displayed_edited_image
-    edited_image = FiltrosConvolucion.convolution(original_image, version)
-    displayed_edited_image = edited_image.copy()
-    show_edited_image()
+    if original_image:
+        global edited_image, displayed_edited_image
+        edited_image = FiltrosConvolucion.convolution(original_image, version)
+        displayed_edited_image = edited_image.copy()
+        
+        show_edited_image()
 
+""" 
+Interfaz para el filtro de mosaico recursivo.
+Recibe la versión del filtro que se va a aplicar.
+"""
 def recursive_image_visual(version):
     if original_image:                
         global edited_image,  displayed_edited_image        
         file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para el mosaico", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
+        
         if file_name:
             filler_image = Image.open(file_name)
             edited_image = FiltrosRecursivos.recursive_image_generation(original_image, filler_image, version)
             displayed_edited_image = edited_image.copy()
+            
             show_edited_image()
 
+""" 
+Interfaz para el filtro que aplica una marca de agua.
+Recibe la versión del filtro que se va a aplicar.
+"""
 def watermark(version):
     if original_image:        
         global edited_image,  displayed_edited_image
-        edited_image = MarcaAgua.add_image_watermark(original_image, version)
-        displayed_edited_image = edited_image.copy()
-        show_edited_image()
+        file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para la marca", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
+        
+        if file_name:
+            watmark_image = Image.open(file_name)
+            edited_image = MarcaAgua.add_image_watermark(original_image, watmark_image, version)
+            displayed_edited_image = edited_image.copy()
+           
+            show_edited_image()
 
 
 
@@ -152,7 +190,7 @@ if __name__ == "__main__":
     global root, original_image, edited_image, displayed_image, displayed_edited_image, grey_submenu, RGB_submenu, opened_submenu
     root = Tk()    
     root.title("Editor Morsa")    
-    
+    # Dimensiones de la ventana
     window_width = 1050
     window_height = 550
 
@@ -195,7 +233,6 @@ if __name__ == "__main__":
     save_btn = Button(button_frame, text="Guardar imagen editada", command=save_image)
     save_btn.pack(side=tk.TOP, fill=tk.X, pady=5)
 
-
     # Crear el menú principal
     menu = Menu(root)
     root.config(menu=menu)
@@ -229,8 +266,6 @@ if __name__ == "__main__":
     watermark_submenu = Menu(menu, tearoff=0)
     watermark_submenu.add_command(label="Marca repetitiva", command=partial(watermark, 1))
     watermark_submenu.add_command(label="Marca centrada", command=partial(watermark, 2))
-
-
    
     # Agregar opciones al menú principal
     menu.add_command(label="Escala de grises", command=lambda: selected_option("Escala de grises"))

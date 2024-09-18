@@ -16,7 +16,8 @@ Javier Alejandro Rivera Zavala - 311288876
 Versión 2.0
 """
 
-""" Función que implementa 2 filtros de escala de grises."""
+""" Función que implementa 2 filtros de escala de grises.
+El primero de ellos emplea una media simple y el segundo una media ponderada"""
 
 def grey_scale(original_image, version):
     if original_image:        
@@ -57,10 +58,8 @@ def rgb_glass(original_image, version):
 
                 if version == 1:
                     rgb_pixels[i, j] = (r, 0, 0)
-
                 elif version == 2:
                     rgb_pixels[i, j] = (0, g, 0)
-
                 else:
                     rgb_pixels[i, j] = (0, 0, b)
 
