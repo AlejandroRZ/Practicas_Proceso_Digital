@@ -18,7 +18,7 @@ from PIL import Image, ImageTk
 from functools import partial
 import tkinter as tk
 import os
-import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, MarcaAgua 
+from Filtros import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, MarcaAgua
 
 # ########################################################## Funciones para la interfaz ########################################################## #
 
@@ -26,7 +26,7 @@ import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, MarcaAgua
 
 def load_image():
     global original_image, displayed_image, edited_image, displayed_edited_image
-    filename = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
+    filename = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen", filetypes=[("JPG file","*.jpg")])
     
     if filename:       
         original_image = Image.open(filename) # Carga la imagen original a tamaño completo
@@ -121,7 +121,7 @@ Recibe la versión del filtro que se va a aplicar.
 def grey_scale_visual(version):
     if original_image:
         global edited_image, displayed_edited_image
-        edited_image = FiltrosBasicos.grey_scale(original_image, version)
+        edited_image = FiltrosColor.grey_scale(original_image, version)
         displayed_edited_image = edited_image.copy()
         
         show_edited_image()
@@ -133,7 +133,7 @@ Recibe la versión del filtro que se va a aplicar.
 def rgb_glass_visual(version):
     if original_image:
         global edited_image, displayed_edited_image
-        edited_image = FiltrosBasicos.rgb_glass(original_image, version)
+        edited_image = FiltrosColor.rgb_glass(original_image, version)
         displayed_edited_image = edited_image.copy()
        
         show_edited_image()
@@ -157,7 +157,7 @@ Recibe la versión del filtro que se va a aplicar.
 def recursive_image_visual(version):
     if original_image:                
         global edited_image,  displayed_edited_image        
-        file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para el mosaico", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
+        file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para el mosaico", filetypes=[("JPG file","*.jpg")])
         
         if file_name:
             filler_image = Image.open(file_name)

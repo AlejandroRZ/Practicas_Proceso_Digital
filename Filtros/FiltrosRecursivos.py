@@ -1,5 +1,6 @@
 from PIL import Image
 import csv, ast, math 
+import importlib.resources as pkg_resources
 
 """
 Implementación de un procesador de imágenes que aplica filtros básicos.
@@ -22,7 +23,9 @@ Versión 2.0
 Dependiendo de la `version`, el algoritmo funciona en escala de grises (version 1) o con colores de una paleta (version 2). """
 
 def recursive_image_generation(reference_image, filler_image, version):    
-    if reference_image and filler_image:    
+    if reference_image and filler_image:
+        reference_image = reference_image.convert('RGB') 
+        filler_imagen = filler_image.convert('RGB')   
         recursive_image = Image.new("RGB", reference_image.size)            
         image_list = []
         tile_width = 15        
@@ -50,12 +53,12 @@ def recursive_image_generation(reference_image, filler_image, version):
                 temp_img = filler_image.copy().resize((tile_width, tile_height), Image.Resampling.LANCZOS)
                 temp_pixels = temp_img.load() 
                 brightness_mod(temp_img, temp_pixels, factor)                   
-                image_list.append(temp_img)                       
+                image_list.append(temp_img) 
+
         
         elif version == 2:                 
-            webpalette_rgb_codes = []                        
-            
-            with open('WebPalette.csv', mode='r') as csv_file_palette:
+            webpalette_rgb_codes = []    
+            with pkg_resources.open_text('Filtros.data', 'WebPalette.csv') as csv_file_palette:
                 reader = csv.DictReader(csv_file_palette)    
                                                         #Recoger el listado de colores de la Web palette
                 for row in reader:                       
@@ -70,7 +73,7 @@ def recursive_image_generation(reference_image, filler_image, version):
             for j in range(0, recursive_image.height, tile_height):       #Generar el mosaico             
                 block_width = min(tile_width, recursive_image.width - i)
                 block_height = min(tile_height, recursive_image.height - j)                                         
-                zone_color = get_average_color(reference_image, i, j, block_width, block_height, version)
+                zone_color = get_average_color(reference_image, i, j, block_width, block_height, version)           
                 best_thumbnail = select_best_thumbnail(image_list, zone_color, version)                    
                 recursive_image.paste(best_thumbnail, (i, j))     
 
@@ -129,7 +132,7 @@ def select_best_thumbnail(image_list, target_color, version):
 
     if version == 1:     
         interval_size = 255 / 30        
-        right_index = int(target_color / interval_size)  #  Empleamos indexación para elegir el tono de
+        right_index = max(0, min(int(target_color / interval_size), 29))  #  Empleamos indexación para elegir el tono de
         best_thumbnail = image_list[right_index]         # gris promedio más idóneo   
 
     elif version == 2:        
