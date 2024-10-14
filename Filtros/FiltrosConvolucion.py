@@ -22,7 +22,8 @@ Versión 2.0
 
 def convolution_core(original_image, matrix_filtr, factor, bias):
     if original_image:
-        convol_img = Image.new("RGB", original_image.size)        
+        original_image =  original_image.copy().convert("RGBA") 
+        convol_img = Image.new("RGBA", original_image.size)        
         pixels = original_image.load()
         convol_pixels = convol_img.load()
         
@@ -39,7 +40,7 @@ def convolution_core(original_image, matrix_filtr, factor, bias):
                     for matrix_column in range(matrix_width):         # Calcular la posición del píxel en la imagen  y seleccionarlo           
                         prod_column = (img_column - (matrix_width // 2) + matrix_column) % original_image.width
                         prod_row = (img_row - (matrix_height // 2) + matrix_row) % original_image.height                 
-                        r, g, b = pixels[prod_column, prod_row]
+                        r, g, b, a = pixels[prod_column, prod_row]
                         # Aplicar el filtro (convolución)
                         sum_r += r * matrix_filtr[matrix_row][matrix_column]
                         sum_g += g * matrix_filtr[matrix_row][matrix_column]
@@ -50,7 +51,7 @@ def convolution_core(original_image, matrix_filtr, factor, bias):
                 sum_g = min(max(int(factor*sum_g + bias), 0), 255)
                 sum_b = min(max(int(factor*sum_b + bias), 0), 255)
                 # Asignar el nuevo valor al píxel convolutionado
-                convol_pixels[img_column, img_row] = (sum_r, sum_g, sum_b)         
+                convol_pixels[img_column, img_row] = (sum_r, sum_g, sum_b, a)         
 
         return convol_img 
 

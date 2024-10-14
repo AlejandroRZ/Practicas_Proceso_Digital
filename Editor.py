@@ -13,12 +13,13 @@ Javier Alejandro Rivera Zavala - 311288876
 
 Versión 2.0
 """
-from tkinter import filedialog, Tk, Frame, Label, Menu, Button, LEFT, RIGHT, BOTH, Y 
+from tkinter import filedialog, Tk, Frame, Label, Menu, Button, ttk, LEFT, RIGHT, BOTH, Y 
 from PIL import Image, ImageTk
 from functools import partial
+from threading import Thread
+from Filtros import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, MarcaAgua
 import tkinter as tk
 import os
-from Filtros import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, MarcaAgua
 
 # ########################################################## Funciones para la interfaz ########################################################## #
 
@@ -26,7 +27,7 @@ from Filtros import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, MarcaAg
 
 def load_image():
     global original_image, displayed_image, edited_image, displayed_edited_image
-    filename = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen", filetypes=[("JPG file","*.jpg")])
+    filename = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen", filetypes=[("Archivos de imagen", "*.jpg *.png"), ("JPG file", "*.jpg"), ("PNG file", "*.png")])
     
     if filename:       
         original_image = Image.open(filename) # Carga la imagen original a tamaño completo
@@ -134,8 +135,7 @@ def rgb_glass_visual(version):
     if original_image:
         global edited_image, displayed_edited_image
         edited_image = FiltrosColor.rgb_glass(original_image, version)
-        displayed_edited_image = edited_image.copy()
-       
+        displayed_edited_image = edited_image.copy()       
         show_edited_image()
 
 """ 
@@ -144,11 +144,10 @@ Recibe la versión del filtro que se va a aplicar.
 """
 def convolution_visual(version):
     if original_image:
-        global edited_image, displayed_edited_image
+        global edited_image, displayed_edited_image 
         edited_image = FiltrosConvolucion.convolution(original_image, version)
-        displayed_edited_image = edited_image.copy()
-        
-        show_edited_image()
+        displayed_edited_image = edited_image.copy() 
+        show_edited_image()           
 
 """ 
 Interfaz para el filtro de mosaico recursivo.
@@ -157,7 +156,7 @@ Recibe la versión del filtro que se va a aplicar.
 def recursive_image_visual(version):
     if original_image:                
         global edited_image,  displayed_edited_image        
-        file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para el mosaico", filetypes=[("JPG file","*.jpg")])
+        file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para el mosaico", filetypes=[("Archivos de imagen", "*.jpg *.png"), ("JPG file", "*.jpg"), ("PNG file", "*.png")])
         
         if file_name:
             filler_image = Image.open(file_name)
@@ -179,27 +178,69 @@ def watermark(version):
             watmark_image = Image.open(file_name)
             edited_image = MarcaAgua.add_image_watermark(original_image, watmark_image, version)
             displayed_edited_image = edited_image.copy()
-           
+
             show_edited_image()
 
 
+def progress_bar(main_window, main_window_x, main_window_y, main_window_width, main_window_height, text):
+    progress_window = tk.Toplevel()
+    progress_window.title(text)      
+    progress_window.geometry("300x150")
+    progress_window.geometry("+%d+%d" % (main_window_x + main_window_width// 3, 
+                                         main_window_y + main_window_height // 3))
+    progress_window.grab_set() 
+    progress_window.wm_protocol("WM_DELETE_WINDOW", lambda: None)      
+    progress_window.resizable(False, False) 
+    #progress_window.overrideredirect(True)
+    progress_window.wm_transient(main_window)
+
+    label = tk.Label(progress_window, text="Procesando, por favor espere...")
+    label.place(x=50, y=20)
+    
+    progressbar = ttk.Progressbar(progress_window, mode="indeterminate") 
+    progressbar.place(x=50, y=70, width=200, height=20)
+    progressbar.start() 
+    
+    return progress_window
+    
+    
+   
+def multi_thread(target_function, function_args, main_window, text):    
+    global window_x, window_y, window_width, window_height, prog_window
+    prog_window = progress_bar(main_window, window_x, window_y, window_width, window_height, text)     
+    thread = Thread(target=target_function, args=function_args)
+    thread.start()
+    def check_thread():
+        if not thread.is_alive():
+            prog_window.destroy()
+        else:
+            prog_window.after(100, check_thread)
+    
+    check_thread()
+    
+ 
+   
 
 # ########################################################## Construcción de la interfaz ########################################################## #
 
 if __name__ == "__main__":
-    global root, original_image, edited_image, displayed_image, displayed_edited_image, grey_submenu, RGB_submenu, opened_submenu
+    global root, original_image, edited_image, displayed_image, displayed_edited_image, grey_submenu 
+    global RGB_submenu, opened_submenu
     root = Tk()    
     root.title("Editor Morsa")    
+    
     # Dimensiones de la ventana
+    global window_x, window_y, window_width, window_height 
     window_width = 1050
-    window_height = 550
-
+    window_height = 550    
     # Obtener el tamaño de la pantalla
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
+    window_x = (screen_width - window_width) // 2
+    window_y = (screen_height - window_height) // 3
 
     # Despliega la ventana principal a razón de 1/2 en el ancho y 1/3 en la altura 
-    root.geometry(f"{window_width}x{window_height}+{(screen_width - window_width) // 2}+{(screen_height - window_height) // 3}")
+    root.geometry(f"{window_width}x{window_height}+{window_x}+{window_y}")
 
     # Frame para las imágenes (lado izquierdo de la ventana)
     image_frame = Frame(root)
@@ -232,7 +273,7 @@ if __name__ == "__main__":
     # Botón para guardar la imagen editada
     save_btn = Button(button_frame, text="Guardar imagen editada", command=save_image)
     save_btn.pack(side=tk.TOP, fill=tk.X, pady=5)
-
+   
     # Crear el menú principal
     menu = Menu(root)
     root.config(menu=menu)
@@ -250,17 +291,17 @@ if __name__ == "__main__":
 
     # Submenú para "Mica RGB"
     conv_submenu = Menu(menu, tearoff=0)
-    conv_submenu.add_command(label="Blur", command=partial(convolution_visual, 1))
-    conv_submenu.add_command(label="Motion blur", command=partial(convolution_visual, 2))
-    conv_submenu.add_command(label="Afinar bordes", command=partial(convolution_visual, 3))
-    conv_submenu.add_command(label="Encontrar bordes", command=partial(convolution_visual, 4))
-    conv_submenu.add_command(label="Relieve", command=partial(convolution_visual, 5))
-    conv_submenu.add_command(label="Promedio", command=partial(convolution_visual, 6))
+    conv_submenu.add_command(label="Blur", command=partial(multi_thread, convolution_visual, (1,), root, "Blur"))
+    conv_submenu.add_command(label="Motion blur", command=partial(multi_thread, convolution_visual, (2,), root, "Motion blur"))
+    conv_submenu.add_command(label="Afinar bordes", command=partial(multi_thread, convolution_visual, (3,), root, "Afinar bordes"))
+    conv_submenu.add_command(label="Encontrar bordes", command=partial(multi_thread, convolution_visual, (4,), root, "Encontrar bordes"))
+    conv_submenu.add_command(label="Relieve", command=partial(multi_thread, convolution_visual, (5,), root, "Relieve"))
+    conv_submenu.add_command(label="Promedio", command=partial(multi_thread, convolution_visual, (6,), root, "Promedio"))
 
     # Submenú para "Filtros recursivos"
     recursive_submenu = Menu(menu, tearoff=0)
-    recursive_submenu.add_command(label="Recursivo grises", command=partial(recursive_image_visual, 1))
-    recursive_submenu.add_command(label="Recursivo colores", command=partial(recursive_image_visual, 2))
+    recursive_submenu.add_command(label="Recursivo grises", command=partial(multi_thread, recursive_image_visual, (1,), root, "Recursivo grises"))
+    recursive_submenu.add_command(label="Recursivo colores", command=partial(multi_thread, recursive_image_visual, (2,), root, "Recursivo colores"))
 
     #Submenú para marca de agua
     watermark_submenu = Menu(menu, tearoff=0)
@@ -280,7 +321,7 @@ if __name__ == "__main__":
     displayed_image = None
     displayed_original_image = None   
     opened_submenu = None  # Variable global para rastrear el submenú abierto
-
+    
     # Bind para ocultar el submenú al hacer clic en cualquier parte de la ventana
     root.bind("<Button-1>", hide_submenu)
   
