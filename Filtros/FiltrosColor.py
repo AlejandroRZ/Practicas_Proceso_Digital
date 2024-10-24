@@ -13,12 +13,12 @@ César Hernández Solís
 Alumno:
 Javier Alejandro Rivera Zavala - 311288876
 
-Versión 2.0
+Versión 3.5
 """
 
 """ Función que implementa 2 filtros de escala de grises.
-El primero de ellos emplea una media simple y el segundo una media ponderada"""
-
+El primero de ellos emplea una media simple y el segundo una media ponderada.
+"""
 def grey_scale(original_image, version):
     if original_image:   
         original_image =  original_image.copy().convert("RGBA")   
@@ -43,8 +43,8 @@ def grey_scale(original_image, version):
     
 
 """ Función que aplica el filtro de mica, es decir, cambia la paleta de colores 
-    de la imagen por una que toma como base a un sólo color RGB."""
-
+    de la imagen por una que toma como base a un sólo color RGB.
+"""
 def rgb_glass(original_image, version):
     if original_image:
         original_image =  original_image.copy().convert("RGBA")   
@@ -68,8 +68,8 @@ def rgb_glass(original_image, version):
         return glass_image
     
 """ Función que mezcla los colores de una imágen con
-otro color de referencia, para tener una paleta afin a este último"""
-
+otro color de referencia, para tener una paleta afin a este último.
+"""
 def color_filter(image, color):    
     rgb_image = image.copy().convert('RGBA')  
     width, height = rgb_image.size    

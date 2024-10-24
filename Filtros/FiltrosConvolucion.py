@@ -13,13 +13,13 @@ César Hernández Solís
 Alumno:
 Javier Alejandro Rivera Zavala - 311288876
 
-Versión 2.0
+Versión 3.5
 """
 
 """ Función que define el recorrido de una imagen pixel por pixel y aplica
     la convolución dada una matriz pertinente, además de un factor y un cesgo 
-    que permiten mantener el brillo base."""
-
+    que permiten mantener el brillo base.
+"""
 def convolution_core(original_image, matrix_filtr, factor, bias):
     if original_image:
         original_image =  original_image.copy().convert("RGBA") 
@@ -56,7 +56,8 @@ def convolution_core(original_image, matrix_filtr, factor, bias):
         return convol_img 
 
 """ Función envolotorio que contienen a los elementos necesarios
- para llamar a cada filtro en su respectivo submenú."""
+ para llamar a cada filtro en su respectivo submenú.
+"""
 def convolution(original_image, version):
     
     if version == 1:      # Blur básico  

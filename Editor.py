@@ -11,13 +11,13 @@ César Hernández Solís
 Alumno:
 Javier Alejandro Rivera Zavala - 311288876
 
-Versión 2.0
+Versión 3.5
 """
 from tkinter import filedialog, Tk, Frame, Label, Menu, Button, ttk, LEFT, RIGHT, BOTH, Y 
 from PIL import Image, ImageTk
 from functools import partial
 from threading import Thread
-from Filtros import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, MarcaAgua
+from Filtros import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, FiltrosDithering, MarcaAgua
 import tkinter as tk
 import os
 
@@ -93,6 +93,10 @@ def selected_option(option):
     elif option == "Marca de agua":
         watermark_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
         opened_submenu = watermark_submenu
+    
+    elif option == "Dithering":
+        dithering_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
+        opened_submenu = dithering_submenu
 
 
 
@@ -116,6 +120,52 @@ def hide_submenu(event=None):
         opened_submenu = None
 
 """ 
+Función que define un pop up con una barra de progreso
+para aquellos filtros que suelen demorarse. No se puede remidensionar
+ni cerrar durante el proceso y se minimiza junto con toda
+la interfaz.
+"""
+def progress_bar(main_window, main_window_x, main_window_y, main_window_width, main_window_height, text):
+    progress_window = tk.Toplevel()
+    progress_window.title(text)      
+    progress_window.geometry("300x150")
+    progress_window.geometry("+%d+%d" % (main_window_x + main_window_width// 3, 
+                                         main_window_y + main_window_height // 3))
+    progress_window.grab_set() 
+    progress_window.wm_protocol("WM_DELETE_WINDOW", lambda: None)      
+    progress_window.resizable(False, False)
+    progress_window.wm_transient(main_window)
+
+    label = tk.Label(progress_window, text="Procesando, por favor espere...")
+    label.place(x=50, y=20)
+    
+    progressbar = ttk.Progressbar(progress_window, mode="indeterminate") 
+    progressbar.place(x=50, y=70, width=200, height=20)
+    progressbar.start() 
+    
+    return progress_window    
+    
+""" 
+Función que controla la aparición de un pop up con una barra de progreso
+para aquellos filtros que suelen demorarse. Permite que la función
+del filtro en turno se ejecute en segundo plano.
+"""  
+def multi_thread_popup(target_function, function_args, main_window, text):    
+    global window_x, window_y, window_width, window_height, prog_window
+    prog_window = progress_bar(main_window, window_x, window_y, window_width, window_height, text)
+
+    thread = Thread(target=target_function, args=function_args)
+    thread.start()
+    
+    def check_thread():
+        if not thread.is_alive():
+            prog_window.destroy()
+        else:
+            prog_window.after(100, check_thread)
+    
+    check_thread()
+
+""" 
 Interfaz para el filtro de escala de grises.
 Recibe la versión del filtro que se va a aplicar.
 """
@@ -123,8 +173,8 @@ def grey_scale_visual(version):
     if original_image:
         global edited_image, displayed_edited_image
         edited_image = FiltrosColor.grey_scale(original_image, version)
-        displayed_edited_image = edited_image.copy()
         
+        displayed_edited_image = edited_image.copy()        
         show_edited_image()
 
 """ 
@@ -135,6 +185,7 @@ def rgb_glass_visual(version):
     if original_image:
         global edited_image, displayed_edited_image
         edited_image = FiltrosColor.rgb_glass(original_image, version)
+
         displayed_edited_image = edited_image.copy()       
         show_edited_image()
 
@@ -146,6 +197,7 @@ def convolution_visual(version):
     if original_image:
         global edited_image, displayed_edited_image 
         edited_image = FiltrosConvolucion.convolution(original_image, version)
+
         displayed_edited_image = edited_image.copy() 
         show_edited_image()           
 
@@ -153,23 +205,27 @@ def convolution_visual(version):
 Interfaz para el filtro de mosaico recursivo.
 Recibe la versión del filtro que se va a aplicar.
 """
-def recursive_image_visual(version):
-    if original_image:                
-        global edited_image,  displayed_edited_image        
+def recursive_image_visual(version, main_window, text):
+    if original_image:   
         file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para el mosaico", filetypes=[("Archivos de imagen", "*.jpg *.png"), ("JPG file", "*.jpg"), ("PNG file", "*.png")])
         
-        if file_name:
-            filler_image = Image.open(file_name)
-            edited_image = FiltrosRecursivos.recursive_image_generation(original_image, filler_image, version)
-            displayed_edited_image = edited_image.copy()
-            
-            show_edited_image()
+        def recursive_generator(file_name_sec, original_image_sec):
+            if file_name_sec:
+                global edited_image,  displayed_edited_image 
+                filler_image = Image.open(file_name)
+                edited_image = FiltrosRecursivos.recursive_image_generation(original_image_sec, 
+                                                                            filler_image, version, 15, 15)
+                displayed_edited_image = edited_image.copy()
+                
+                show_edited_image()
+        
+        multi_thread_popup(recursive_generator, (file_name, original_image), main_window, text) 
 
 """ 
 Interfaz para el filtro que aplica una marca de agua.
 Recibe la versión del filtro que se va a aplicar.
 """
-def watermark(version):
+def watermark_visual(version):
     if original_image:        
         global edited_image,  displayed_edited_image
         file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para la marca", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
@@ -181,42 +237,22 @@ def watermark(version):
 
             show_edited_image()
 
+""" 
+Interfaz para el filtro que implementa distintos tipos de dithering.
+Recibe la versión del filtro que se va a aplicar.
+"""
+def dithering_visual(version):   
+   if original_image:
+        global edited_image, displayed_edited_image
 
-def progress_bar(main_window, main_window_x, main_window_y, main_window_width, main_window_height, text):
-    progress_window = tk.Toplevel()
-    progress_window.title(text)      
-    progress_window.geometry("300x150")
-    progress_window.geometry("+%d+%d" % (main_window_x + main_window_width// 3, 
-                                         main_window_y + main_window_height // 3))
-    progress_window.grab_set() 
-    progress_window.wm_protocol("WM_DELETE_WINDOW", lambda: None)      
-    progress_window.resizable(False, False) 
-    #progress_window.overrideredirect(True)
-    progress_window.wm_transient(main_window)
-
-    label = tk.Label(progress_window, text="Procesando, por favor espere...")
-    label.place(x=50, y=20)
-    
-    progressbar = ttk.Progressbar(progress_window, mode="indeterminate") 
-    progressbar.place(x=50, y=70, width=200, height=20)
-    progressbar.start() 
-    
-    return progress_window
-    
-    
-   
-def multi_thread(target_function, function_args, main_window, text):    
-    global window_x, window_y, window_width, window_height, prog_window
-    prog_window = progress_bar(main_window, window_x, window_y, window_width, window_height, text)     
-    thread = Thread(target=target_function, args=function_args)
-    thread.start()
-    def check_thread():
-        if not thread.is_alive():
-            prog_window.destroy()
+        if version == 0:         
+            edited_image = FiltrosDithering.semitones(original_image, 6, "white", "black")
         else:
-            prog_window.after(100, check_thread)
-    
-    check_thread()
+            edited_image = FiltrosDithering.dithering(original_image, version)
+            
+        displayed_edited_image = edited_image.copy() 
+        show_edited_image()
+
     
  
    
@@ -291,29 +327,38 @@ if __name__ == "__main__":
 
     # Submenú para "Mica RGB"
     conv_submenu = Menu(menu, tearoff=0)
-    conv_submenu.add_command(label="Blur", command=partial(multi_thread, convolution_visual, (1,), root, "Blur"))
-    conv_submenu.add_command(label="Motion blur", command=partial(multi_thread, convolution_visual, (2,), root, "Motion blur"))
-    conv_submenu.add_command(label="Afinar bordes", command=partial(multi_thread, convolution_visual, (3,), root, "Afinar bordes"))
-    conv_submenu.add_command(label="Encontrar bordes", command=partial(multi_thread, convolution_visual, (4,), root, "Encontrar bordes"))
-    conv_submenu.add_command(label="Relieve", command=partial(multi_thread, convolution_visual, (5,), root, "Relieve"))
-    conv_submenu.add_command(label="Promedio", command=partial(multi_thread, convolution_visual, (6,), root, "Promedio"))
+    conv_submenu.add_command(label="Blur", command=partial(multi_thread_popup, convolution_visual, (1,), root, "Blur"))
+    conv_submenu.add_command(label="Motion blur", command=partial(multi_thread_popup, convolution_visual, (2,), root, "Motion blur"))
+    conv_submenu.add_command(label="Afinar bordes", command=partial(multi_thread_popup, convolution_visual, (3,), root, "Afinar bordes"))
+    conv_submenu.add_command(label="Encontrar bordes", command=partial(multi_thread_popup, convolution_visual, (4,), root, "Encontrar bordes"))
+    conv_submenu.add_command(label="Relieve", command=partial(multi_thread_popup, convolution_visual, (5,), root, "Relieve"))
+    conv_submenu.add_command(label="Promedio", command=partial(multi_thread_popup, convolution_visual, (6,), root, "Promedio"))
 
     # Submenú para "Filtros recursivos"
     recursive_submenu = Menu(menu, tearoff=0)
-    recursive_submenu.add_command(label="Recursivo grises", command=partial(multi_thread, recursive_image_visual, (1,), root, "Recursivo grises"))
-    recursive_submenu.add_command(label="Recursivo colores", command=partial(multi_thread, recursive_image_visual, (2,), root, "Recursivo colores"))
+    recursive_submenu.add_command(label="Recursivo grises", command=partial(recursive_image_visual, 1, root, "Recursivo grises"))
+    recursive_submenu.add_command(label="Recursivo colores", command=partial(recursive_image_visual, 2, root, "Recursivo colores"))
 
     #Submenú para marca de agua
     watermark_submenu = Menu(menu, tearoff=0)
-    watermark_submenu.add_command(label="Marca repetitiva", command=partial(watermark, 1))
-    watermark_submenu.add_command(label="Marca centrada", command=partial(watermark, 2))
+    watermark_submenu.add_command(label="Marca repetitiva", command=partial(watermark_visual, 1))
+    watermark_submenu.add_command(label="Marca centrada", command=partial(watermark_visual, 2))
    
+    #Submenú para dithering
+    dithering_submenu = Menu(menu, tearoff=0)
+    dithering_submenu.add_command(label="Semitonos", command=partial(dithering_visual, 0))
+    dithering_submenu.add_command(label="Dithering por azar", command=partial(dithering_visual, 1))
+    dithering_submenu.add_command(label="Dithering ordenado", command=partial(dithering_visual, 2))
+    dithering_submenu.add_command(label="Dithering disperso", command=partial(dithering_visual, 3))
+    dithering_submenu.add_command(label="Floyd Steinberg", command=partial(dithering_visual, 4))
+    
     # Agregar opciones al menú principal
     menu.add_command(label="Escala de grises", command=lambda: selected_option("Escala de grises"))
     menu.add_command(label="Mica RGB", command=lambda: selected_option("Mica RGB"))
     menu.add_command(label="Convolución", command=lambda: selected_option("Convolución"))
     menu.add_command(label="Filtros recursivos", command=lambda: selected_option("Filtros recursivos"))
     menu.add_command(label="Marca de agua", command=lambda: selected_option("Marca de agua"))
+    menu.add_command(label="Dithering", command=lambda: selected_option("Dithering"))
 
     # Variable global para almacenar la imagen original
     original_image = None
@@ -324,7 +369,8 @@ if __name__ == "__main__":
     
     # Bind para ocultar el submenú al hacer clic en cualquier parte de la ventana
     root.bind("<Button-1>", hide_submenu)
-  
+    root.bind("<Configure>", hide_submenu)
+    root.bind("<Unmap>", hide_submenu)
     root.mainloop()
 
 

@@ -18,21 +18,21 @@ César Hernández Solís
 Alumno:
 Javier Alejandro Rivera Zavala - 311288876
 
-Versión 2.0
+Versión 3.5
 """
 
-""" Función que genera una imagen de forma recursiva a partir de una imagen de referencia y una imagen de relleno (filler).
-Dependiendo de la `version`, el algoritmo funciona en escala de grises (version 1) o con colores de una paleta (version 2). """
-
-def recursive_image_generation(reference_image, filler_image, version):    
+""" Función que genera una imagen de forma recursiva a partir de una imagen de referencia 
+y una imagen de relleno (filler).
+Dependiendo de la `version`, el algoritmo funciona en escala de grises (version 1) o con 
+colores de una paleta (version 2). 
+"""
+def recursive_image_generation(reference_image, filler_image, version, tile_width, tile_height):    
     if reference_image and filler_image:
         reference_image = reference_image.copy().convert('RGBA') 
         filler_image = filler_image.copy().convert('RGBA')   
         recursive_image = Image.new("RGBA", reference_image.size)            
         image_list = []
-        tile_width = 15        
-        tile_height = 15
-
+        
         if version == 1: 
             recursive_image = grey_scale(reference_image.copy(), 2)  #Pasamos a escala de grises a la
             filler_image =  grey_scale(filler_image, 2)              #imagen base y a la de relleno   
@@ -43,7 +43,6 @@ def recursive_image_generation(reference_image, filler_image, version):
                 temp_pixels = temp_img.load() 
                 brightness_mod(temp_img, temp_pixels, factor)                   
                 image_list.append(temp_img) 
-
         
         elif version == 2:                 
             webpalette_rgb_codes = []    
@@ -69,7 +68,7 @@ def recursive_image_generation(reference_image, filler_image, version):
     return recursive_image
                                       
            
-"Funcion que ajusta el brillo de los pixeles de acuerdo a un factor dado"
+"""Funcion que ajusta el brillo de los pixeles de acuerdo a un factor dado."""
 
 def brightness_mod(temp_img, bright_pixels, factor):         
     for i in range(temp_img.width):
@@ -80,7 +79,7 @@ def brightness_mod(temp_img, bright_pixels, factor):
             new_b = min(max(int(b * factor), 0), 255)
             bright_pixels[i, j] = (new_r, new_g, new_b, a)
 
-"Función para obtener el color promedio de una zona dentro de una imagen"
+"""Función para obtener el color promedio de una zona dentro de una imagen"""
 
 def get_average_color(image, x, y, width, height, version):  
     pixels = image.load()
@@ -113,8 +112,8 @@ def get_average_color(image, x, y, width, height, version):
 
 
 """ Función que nos permite elegir la miniatura más adecuada para reemplazar una zona
-de la imagen de referencia con base en su color promedio. """
-
+de la imagen de referencia con base en su color promedio. 
+"""
 def select_best_thumbnail(image_list, target_color, version):
     right_index = 0
     minimum_difference = float('inf')

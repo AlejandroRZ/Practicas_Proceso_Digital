@@ -15,7 +15,7 @@ César Hernández Solís
 Alumno:
 Javier Alejandro Rivera Zavala - 311288876
 
-Versión 2.0
+Versión 3.5
 """
 
 """
@@ -58,7 +58,9 @@ def add_image_watermark(original_image, watermark_image, version):
         return  background_image
 
 
-""" Función que superpone la marca de agua (upper_image) sobre la imagen de fondo (background_image) en las coordenadas (i, j)."""
+""" Función que superpone la marca de agua (upper_image) sobre la imagen de fondo 
+(background_image) en las coordenadas (i, j).
+"""
 def blend_area(upper_image, background_image, i, j):
     watermark_width, watermark_height = upper_image.size  # Tamaño de la marca de agua
     background_image_width, background_image_height = background_image.size   
