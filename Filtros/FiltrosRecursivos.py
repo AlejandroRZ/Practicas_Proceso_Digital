@@ -18,7 +18,7 @@ César Hernández Solís
 Alumno:
 Javier Alejandro Rivera Zavala - 311288876
 
-Versión 3.5
+Versión 3.7
 """
 
 """ Función que genera una imagen de forma recursiva a partir de una imagen de referencia 

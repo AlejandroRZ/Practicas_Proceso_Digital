@@ -11,13 +11,13 @@ César Hernández Solís
 Alumno:
 Javier Alejandro Rivera Zavala - 311288876
 
-Versión 3.5
+Versión 3.7
 """
 from tkinter import filedialog, Tk, Frame, Label, Menu, Button, ttk, LEFT, RIGHT, BOTH, Y 
 from PIL import Image, ImageTk
 from functools import partial
 from threading import Thread
-from Filtros import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, FiltrosDithering, MarcaAgua
+from Filtros import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, FiltrosDithering, FiltrosArtisticos, FiltrosVarios, MarcaAgua
 import tkinter as tk
 import os
 
@@ -56,12 +56,14 @@ def fit_image(image, label):
 """ Función para mostrar la imagen original redimensionada. """
 
 def show_original_image():
+    global original_image   
     if original_image:
         fit_image(displayed_image, original_lbl)
 
 """ Función para mostrar la imagen editada redimensionada """
 
 def show_edited_image():
+    global edited_image   
     if edited_image:
         fit_image(displayed_edited_image, edited_lbl)
 
@@ -98,11 +100,19 @@ def selected_option(option):
         dithering_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
         opened_submenu = dithering_submenu
 
+    elif option == "Filtros artísticos":
+        artistic_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
+        opened_submenu = artistic_submenu
+
+    elif option == "Otros":
+        others_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
+        opened_submenu = others_submenu
 
 
 """ Función para guardar la imagen editada."""
 
 def save_image():
+    global edited_image   
     if edited_image:        # Abre un cuadro de diálogo para guardar la imagen
         file_path = filedialog.asksaveasfilename(defaultextension=".png",   
                                                  filetypes=[("PNG file", "*.png"), ("JPG file", "*.jpg")])
@@ -170,6 +180,7 @@ Interfaz para el filtro de escala de grises.
 Recibe la versión del filtro que se va a aplicar.
 """
 def grey_scale_visual(version):
+    global original_image   
     if original_image:
         global edited_image, displayed_edited_image
         edited_image = FiltrosColor.grey_scale(original_image, version)
@@ -182,6 +193,7 @@ Interfaz para el filtro de mica RGB.
 Recibe la versión del filtro que se va a aplicar.
 """
 def rgb_glass_visual(version):
+    global original_image   
     if original_image:
         global edited_image, displayed_edited_image
         edited_image = FiltrosColor.rgb_glass(original_image, version)
@@ -194,6 +206,7 @@ Interfaz para los filtros por convolución.
 Recibe la versión del filtro que se va a aplicar.
 """
 def convolution_visual(version):
+    global original_image   
     if original_image:
         global edited_image, displayed_edited_image 
         edited_image = FiltrosConvolucion.convolution(original_image, version)
@@ -206,6 +219,7 @@ Interfaz para el filtro de mosaico recursivo.
 Recibe la versión del filtro que se va a aplicar.
 """
 def recursive_image_visual(version, main_window, text):
+    global original_image   
     if original_image:   
         file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para el mosaico", filetypes=[("Archivos de imagen", "*.jpg *.png"), ("JPG file", "*.jpg"), ("PNG file", "*.png")])
         
@@ -226,6 +240,7 @@ Interfaz para el filtro que aplica una marca de agua.
 Recibe la versión del filtro que se va a aplicar.
 """
 def watermark_visual(version):
+    global original_image   
     if original_image:        
         global edited_image,  displayed_edited_image
         file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para la marca", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
@@ -241,7 +256,8 @@ def watermark_visual(version):
 Interfaz para el filtro que implementa distintos tipos de dithering.
 Recibe la versión del filtro que se va a aplicar.
 """
-def dithering_visual(version):   
+def dithering_visual(version):
+   global original_image      
    if original_image:
         global edited_image, displayed_edited_image
 
@@ -253,7 +269,43 @@ def dithering_visual(version):
         displayed_edited_image = edited_image.copy() 
         show_edited_image()
 
-    
+
+""" 
+Interfaz para el filtro que implementa filtros artísticos.
+Recibe la versión del filtro que se va a aplicar.
+"""
+def artistic_visual(version):
+   global original_image   
+   if original_image:
+        global edited_image, displayed_edited_image
+
+        if version == 1:         
+            edited_image = FiltrosArtisticos.watercolor(original_image, 7, 1)
+
+        elif version == 2:
+            edited_image = FiltrosArtisticos.watercolor(original_image, 7, 2)
+       
+        displayed_edited_image = edited_image.copy() 
+        show_edited_image()
+
+
+""" 
+Interfaz para el filtro que implementa filtros variados.
+Recibe el tipo de filtro que se va a aplicar, indicado por un entero.
+"""
+def others_visual(version):
+   global original_image   
+   if original_image:
+        global edited_image, displayed_edited_image
+
+        if version == 1:         
+            edited_image = FiltrosVarios.erosion(original_image, 5, 1)
+
+        elif version == 2:
+            edited_image = FiltrosVarios.erosion(original_image, 5, 2)
+       
+        displayed_edited_image = edited_image.copy() 
+        show_edited_image()
  
    
 
@@ -263,7 +315,9 @@ if __name__ == "__main__":
     global root, original_image, edited_image, displayed_image, displayed_edited_image, grey_submenu 
     global RGB_submenu, opened_submenu
     root = Tk()    
-    root.title("Editor Morsa")    
+    root.title("Editor Morsa") 
+    icon_path = os.path.join(os.path.dirname(__file__), "Filtros", "data", "icon.png")
+    root.iconphoto(False, tk.PhotoImage(file=icon_path))
     
     # Dimensiones de la ventana
     global window_x, window_y, window_width, window_height 
@@ -316,14 +370,14 @@ if __name__ == "__main__":
 
     # Submenú para "Escala de grises"
     grey_submenu = Menu(menu, tearoff=0)
-    grey_submenu.add_command(label="Escala estandar", command=partial(grey_scale_visual, 1))
-    grey_submenu.add_command(label="Escala ponderada", command=partial(grey_scale_visual, 2))
+    grey_submenu.add_command(label="Escala estandar", command=partial(multi_thread_popup, grey_scale_visual, (1,), root, "Escala estandar"))
+    grey_submenu.add_command(label="Escala ponderada", command=partial(multi_thread_popup, grey_scale_visual, (2,), root, "Escala ponderada"))
 
     # Submenú para "Mica RGB"
     RGB_submenu = Menu(menu, tearoff=0)
-    RGB_submenu.add_command(label="Mica roja", command=partial(rgb_glass_visual, 1))
-    RGB_submenu.add_command(label="Mica verde", command=partial(rgb_glass_visual, 2))
-    RGB_submenu.add_command(label="Mica azul", command=partial(rgb_glass_visual,3))
+    RGB_submenu.add_command(label="Mica roja", command=partial(multi_thread_popup, rgb_glass_visual, (1,), root, "Mica roja"))
+    RGB_submenu.add_command(label="Mica verde", command=partial(multi_thread_popup, rgb_glass_visual, (2,), root, "Mica verde"))
+    RGB_submenu.add_command(label="Mica azul", command=partial(multi_thread_popup, rgb_glass_visual, (3,), root, "Mica azul" ))
 
     # Submenú para "Mica RGB"
     conv_submenu = Menu(menu, tearoff=0)
@@ -341,16 +395,26 @@ if __name__ == "__main__":
 
     #Submenú para marca de agua
     watermark_submenu = Menu(menu, tearoff=0)
-    watermark_submenu.add_command(label="Marca repetitiva", command=partial(watermark_visual, 1))
-    watermark_submenu.add_command(label="Marca centrada", command=partial(watermark_visual, 2))
+    watermark_submenu.add_command(label="Marca repetitiva", command=partial(multi_thread_popup, watermark_visual, (1,), root, "Marca repetitiva"))
+    watermark_submenu.add_command(label="Marca centrada", command=partial(multi_thread_popup, watermark_visual, (2,), root, "Marca centrada"))
    
     #Submenú para dithering
     dithering_submenu = Menu(menu, tearoff=0)
-    dithering_submenu.add_command(label="Semitonos", command=partial(dithering_visual, 0))
-    dithering_submenu.add_command(label="Dithering por azar", command=partial(dithering_visual, 1))
-    dithering_submenu.add_command(label="Dithering ordenado", command=partial(dithering_visual, 2))
-    dithering_submenu.add_command(label="Dithering disperso", command=partial(dithering_visual, 3))
-    dithering_submenu.add_command(label="Floyd Steinberg", command=partial(dithering_visual, 4))
+    dithering_submenu.add_command(label="Semitonos", command=partial(multi_thread_popup, dithering_visual, (0,), root, "Semitonos"))
+    dithering_submenu.add_command(label="Dithering por azar", command=partial(multi_thread_popup, dithering_visual, (1,), root, "Dithering por azar"))
+    dithering_submenu.add_command(label="Dithering ordenado", command=partial(multi_thread_popup, dithering_visual, (2,), root, "Dithering ordenado"))
+    dithering_submenu.add_command(label="Dithering disperso", command=partial(multi_thread_popup, dithering_visual, (3,), root, "Dithering disperso"))
+    dithering_submenu.add_command(label="Floyd Steinberg", command=partial(multi_thread_popup, dithering_visual, (4,), root, "Floyd Steinberg"))
+
+    #Submenú para filtros artísticos
+    artistic_submenu = Menu(menu, tearoff=0)
+    artistic_submenu.add_command(label="Acuarela a color", command=partial(multi_thread_popup, artistic_visual, (1,), root, "Acuarela a color"))
+    artistic_submenu.add_command(label="Acuarela en gris", command=partial(multi_thread_popup, artistic_visual, (2,), root, "Acuarela en gris"))
+    
+    #Submenú para filtros extra
+    others_submenu = Menu(menu, tearoff=0)
+    others_submenu.add_command(label="Erosión de máximos", command=partial(multi_thread_popup, others_visual, (1,), root, "Erosión de máximos"))
+    others_submenu.add_command(label="Erosión de míninmos", command=partial(multi_thread_popup, others_visual, (2,), root, "Erosión de míninmos"))
     
     # Agregar opciones al menú principal
     menu.add_command(label="Escala de grises", command=lambda: selected_option("Escala de grises"))
@@ -359,6 +423,8 @@ if __name__ == "__main__":
     menu.add_command(label="Filtros recursivos", command=lambda: selected_option("Filtros recursivos"))
     menu.add_command(label="Marca de agua", command=lambda: selected_option("Marca de agua"))
     menu.add_command(label="Dithering", command=lambda: selected_option("Dithering"))
+    menu.add_command(label="Filtros artísticos", command=lambda: selected_option("Filtros artísticos"))
+    menu.add_command(label="Otros", command=lambda: selected_option("Otros"))
 
     # Variable global para almacenar la imagen original
     original_image = None

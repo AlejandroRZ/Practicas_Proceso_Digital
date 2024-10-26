@@ -13,7 +13,7 @@ César Hernández Solís
 Alumno:
 Javier Alejandro Rivera Zavala - 311288876
 
-Versión 3.5
+Versión 3.7
 """
 
 """ Función que implementa 2 filtros de escala de grises.

@@ -13,7 +13,7 @@ César Hernández Solís
 Alumno:
 Javier Alejandro Rivera Zavala - 311288876
 
-Versión 3.5
+Versión 3.7
 """
 
 """ Función que define el recorrido de una imagen pixel por pixel y aplica
