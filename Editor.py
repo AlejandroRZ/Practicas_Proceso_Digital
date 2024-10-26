@@ -299,10 +299,10 @@ def others_visual(version):
         global edited_image, displayed_edited_image
 
         if version == 1:         
-            edited_image = FiltrosVarios.erosion(original_image, 5, 1)
+            edited_image = FiltrosVarios.erosion(original_image, 3, 1)
 
         elif version == 2:
-            edited_image = FiltrosVarios.erosion(original_image, 5, 2)
+            edited_image = FiltrosVarios.erosion(original_image, 3, 2)
        
         displayed_edited_image = edited_image.copy() 
         show_edited_image()
