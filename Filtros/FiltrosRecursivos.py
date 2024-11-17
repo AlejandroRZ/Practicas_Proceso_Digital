@@ -92,6 +92,7 @@ def get_average_color(image, x, y, width, height, version):
 
                 if version == 1:
                     grey = pixels[i, j][0] # Tomar el valor de gris (R=G=B)
+                    a =  pixels[i, j][3]
                     total_g += grey
                 else:
                     temp_r, temp_g, temp_b, a = pixels[i, j]
@@ -104,7 +105,7 @@ def get_average_color(image, x, y, width, height, version):
         if count == 0:
             average_color = 0
         elif version == 1:
-            average_color = total_g // count
+            average_color = (total_g // count, total_g // count, total_g // count, a)
         else:
             average_color = (total_r // count, total_g // count, total_b // count, a)
     
@@ -119,7 +120,8 @@ def select_best_thumbnail(image_list, target_color, version):
     minimum_difference = float('inf')
 
     if version == 1:     
-        interval_size = 255 / 30        
+        interval_size = 255 / 30 
+        target_color = target_color[0]       
         right_index = max(0, min(int(target_color / interval_size), 29))  #  Empleamos indexación para elegir el tono de
         best_thumbnail = image_list[right_index]         # gris promedio más idóneo   
 

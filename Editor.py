@@ -17,10 +17,11 @@ from tkinter import filedialog, Tk, Frame, Label, Menu, Button, ttk, LEFT, RIGHT
 from PIL import Image, ImageTk
 from functools import partial
 from threading import Thread
-from Filtros import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, FiltrosDithering, FiltrosArtisticos, FiltrosVarios, MarcaAgua
+from Filtros import FiltrosRecursivos, FiltrosColor, FiltrosConvolucion, FiltrosDithering, FiltrosArtisticos, FiltrosRedimensionar, FiltrosVarios, MarcaAgua
 import tkinter as tk
 import os
-
+global html_file
+html_file = None
 # ########################################################## Funciones para la interfaz ########################################################## #
 
 """ Función para cargar una imagen desde el sistema de archivos. """
@@ -104,6 +105,10 @@ def selected_option(option):
         artistic_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
         opened_submenu = artistic_submenu
 
+    elif option == "Redimensionar imagen":
+        resize_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
+        opened_submenu = resize_submenu
+
     elif option == "Otros":
         others_submenu.post(root.winfo_pointerx(), root.winfo_pointery())
         opened_submenu = others_submenu
@@ -112,13 +117,21 @@ def selected_option(option):
 """ Función para guardar la imagen editada."""
 
 def save_image():
-    global edited_image   
+    global edited_image, html_file   
     if edited_image:        # Abre un cuadro de diálogo para guardar la imagen
         file_path = filedialog.asksaveasfilename(defaultextension=".png",   
                                                  filetypes=[("PNG file", "*.png"), ("JPG file", "*.jpg")])
         if file_path:
             edited_image.save(file_path)
-            tk.messagebox.showinfo("Guardado", "Imagen guardada con éxito.")
+            message = "Imagen guardada con éxito."  
+            if html_file:
+                html_path = os.path.splitext(file_path)[0] + ".html"
+                with open(html_path, "w", encoding="utf-8") as html_output:
+                    html_output.write(html_file)
+                message = "Imagen y HTML guardados con éxito." 
+                       
+              
+            tk.messagebox.showinfo("Guardado", message)
 
 """ Función para evitar que más de un submenú se despliegue al mismo tiempo."""
 
@@ -182,7 +195,11 @@ Recibe la versión del filtro que se va a aplicar.
 def grey_scale_visual(version):
     global original_image   
     if original_image:
-        global edited_image, displayed_edited_image
+        global edited_image, displayed_edited_image, html_file
+
+        if html_file:
+            html_file = None
+
         edited_image = FiltrosColor.grey_scale(original_image, version)
         
         displayed_edited_image = edited_image.copy()        
@@ -195,7 +212,11 @@ Recibe la versión del filtro que se va a aplicar.
 def rgb_glass_visual(version):
     global original_image   
     if original_image:
-        global edited_image, displayed_edited_image
+        global edited_image, displayed_edited_image, html_file
+
+        if html_file:
+            html_file = None
+
         edited_image = FiltrosColor.rgb_glass(original_image, version)
 
         displayed_edited_image = edited_image.copy()       
@@ -208,7 +229,11 @@ Recibe la versión del filtro que se va a aplicar.
 def convolution_visual(version):
     global original_image   
     if original_image:
-        global edited_image, displayed_edited_image 
+        global edited_image, displayed_edited_image, html_file
+
+        if html_file:
+            html_file = None
+
         edited_image = FiltrosConvolucion.convolution(original_image, version)
 
         displayed_edited_image = edited_image.copy() 
@@ -220,7 +245,12 @@ Recibe la versión del filtro que se va a aplicar.
 """
 def recursive_image_visual(version, main_window, text):
     global original_image   
-    if original_image:   
+    if original_image:           
+        global html_file
+
+        if html_file:
+            html_file = None
+    
         file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para el mosaico", filetypes=[("Archivos de imagen", "*.jpg *.png"), ("JPG file", "*.jpg"), ("PNG file", "*.png")])
         
         def recursive_generator(file_name_sec, original_image_sec):
@@ -242,7 +272,11 @@ Recibe la versión del filtro que se va a aplicar.
 def watermark_visual(version):
     global original_image   
     if original_image:        
-        global edited_image,  displayed_edited_image
+        global edited_image, displayed_edited_image, html_file
+        
+        if html_file:
+            html_file = None        
+
         file_name = filedialog.askopenfilename(initialdir=os.getcwd(), title="Selecciona la imagen para la marca", filetypes=(("JPG file","*.jpg"), ("PNG file", "*.png")))
         
         if file_name:
@@ -259,7 +293,10 @@ Recibe la versión del filtro que se va a aplicar.
 def dithering_visual(version):
    global original_image      
    if original_image:
-        global edited_image, displayed_edited_image
+        global edited_image, displayed_edited_image, html_file
+
+        if html_file:
+            html_file = None
 
         if version == 0:         
             edited_image = FiltrosDithering.semitones(original_image, 6, "white", "black")
@@ -277,13 +314,52 @@ Recibe la versión del filtro que se va a aplicar.
 def artistic_visual(version):
    global original_image   
    if original_image:
-        global edited_image, displayed_edited_image
+        global edited_image, displayed_edited_image, html_file
+
+
+        if html_file:
+            html_file = None
 
         if version == 1:         
             edited_image = FiltrosArtisticos.watercolor(original_image, 7, 1)
 
         elif version == 2:
             edited_image = FiltrosArtisticos.watercolor(original_image, 7, 2)
+        
+        elif version == 3: #Filtro de letras escala de grises
+            html_file, edited_image = FiltrosArtisticos.letters_filter(original_image, 5, 9, 1)
+        
+        elif version == 4: #Filtro de letras en color
+            html_file, edited_image = FiltrosArtisticos.letters_filter(original_image, 5, 9, 2)
+       
+        displayed_edited_image = edited_image.copy() 
+        show_edited_image()
+
+def resize_visual(version):
+   global original_image   
+   if original_image:
+        global edited_image, displayed_edited_image, html_file
+
+        if html_file:
+            html_file = None
+
+        if version == 1:         
+            edited_image = FiltrosRedimensionar.resize_image(original_image, 0.25)
+
+        elif version == 2:
+            edited_image =  FiltrosRedimensionar.resize_image(original_image, 0.5)
+        
+        elif version == 3:
+            edited_image =  FiltrosRedimensionar.resize_image(original_image, 0.75)
+        
+        elif version == 4:
+            edited_image =  FiltrosRedimensionar.resize_image(original_image, 1.5)
+        
+        elif version == 5:
+            edited_image =  FiltrosRedimensionar.resize_image(original_image, 2)
+        
+        elif version == 6:
+            edited_image =  FiltrosRedimensionar.resize_image(original_image, 2.5)
        
         displayed_edited_image = edited_image.copy() 
         show_edited_image()
@@ -296,7 +372,10 @@ Recibe el tipo de filtro que se va a aplicar, indicado por un entero.
 def others_visual(version):
    global original_image   
    if original_image:
-        global edited_image, displayed_edited_image
+        global edited_image, displayed_edited_image, html_file
+
+        if html_file:
+            html_file = None
 
         if version == 1:         
             edited_image = FiltrosVarios.erosion(original_image, 3, 1)
@@ -410,6 +489,16 @@ if __name__ == "__main__":
     artistic_submenu = Menu(menu, tearoff=0)
     artistic_submenu.add_command(label="Acuarela a color", command=partial(multi_thread_popup, artistic_visual, (1,), root, "Acuarela a color"))
     artistic_submenu.add_command(label="Acuarela en gris", command=partial(multi_thread_popup, artistic_visual, (2,), root, "Acuarela en gris"))
+    artistic_submenu.add_command(label="Letras en grises", command=partial(multi_thread_popup, artistic_visual, (3,), root, "Letras en grises"))
+    artistic_submenu.add_command(label="Letras en color", command=partial(multi_thread_popup, artistic_visual, (4,), root, "Letras en color"))
+    #Submenú para filtros de redimensión
+    resize_submenu = Menu(menu, tearoff=0)
+    resize_submenu.add_command(label="Redimensionar al 25%", command=partial(multi_thread_popup, resize_visual, (1,), root, "Redimensionar al 25%"))
+    resize_submenu.add_command(label="Redimensionar al 50%", command=partial(multi_thread_popup, resize_visual, (2,), root, "Redimensionar al 50%"))
+    resize_submenu.add_command(label="Redimensionar al 75%", command=partial(multi_thread_popup, resize_visual, (3,), root, "Redimensionar al 75%"))
+    resize_submenu.add_command(label="Redimensionar al 150%", command=partial(multi_thread_popup, resize_visual, (4,), root, "Redimensionar al 150%"))
+    resize_submenu.add_command(label="Redimensionar al 200%", command=partial(multi_thread_popup, resize_visual, (5,), root, "Redimensionar al 200%"))
+    resize_submenu.add_command(label="Redimensionar al 250%", command=partial(multi_thread_popup, resize_visual, (6,), root, "Redimensionar al 250%"))
     
     #Submenú para filtros extra
     others_submenu = Menu(menu, tearoff=0)
@@ -424,6 +513,7 @@ if __name__ == "__main__":
     menu.add_command(label="Marca de agua", command=lambda: selected_option("Marca de agua"))
     menu.add_command(label="Dithering", command=lambda: selected_option("Dithering"))
     menu.add_command(label="Filtros artísticos", command=lambda: selected_option("Filtros artísticos"))
+    menu.add_command(label="Redimensionar imagen", command=lambda: selected_option("Redimensionar imagen"))
     menu.add_command(label="Otros", command=lambda: selected_option("Otros"))
 
     # Variable global para almacenar la imagen original

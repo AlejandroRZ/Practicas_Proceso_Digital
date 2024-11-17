@@ -1,5 +1,6 @@
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from Filtros import FiltrosColor
+from .FiltrosRecursivos import get_average_color
 """
 Implementación de un procesador de imágenes que aplica filtros básicos.
 Archivo en el que se definene funciones para filtros artisticos.
@@ -73,3 +74,36 @@ def watercolor(original_image, matrix_size, version):
                     watercolor_pixels[x, y] = most_common_color
 
         return watercolor_image
+    
+
+def letters_filter(original_image, section_width, section_height, version):
+    if original_image:
+        original_image =  original_image.copy().convert("RGBA")
+        if version == 1:
+            original_image = FiltrosColor.grey_scale(original_image, 2)
+        width, height = original_image.size
+        html = "<!DOCTYPE html>\n<html>\n<head>\n<style>\n"
+        html += "body { font-family: monospace; line-height: 1; }\n</style>\n</head>\n<body>\n<pre>\n"
+
+        # Create a blank new image
+        new_image = Image.new("RGBA", (width, height), (255,255,255,0))
+        draw = ImageDraw.Draw(new_image)
+        
+        # Use a font for the letters (adjust the path based on your system if needed)
+        try:
+            font = ImageFont.truetype("arial.ttf", section_height)
+        except IOError:
+            font = ImageFont.load_default()
+
+        for y in range(0, height, section_height):
+            for x in range(0, width, section_width):   #r, g y b iguales si la versión es 1
+                r, g, b, a = get_average_color(original_image, x, y, section_width, section_height, version)               
+                
+                html += f'<span style="color: rgba({r},{g},{b},{a/255});">M</span>'                
+                draw.text((x, y), "M", fill=(r,g,b,a), font=font)
+
+            html += "\n"  
+
+        html += "</pre>\n</body>\n</html>"
+        return html, new_image
+

@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw
 from .FiltrosColor import grey_scale
-from .FiltrosRecursivos import get_average_color, select_best_thumbnail
+from .FiltrosRecursivos import get_average_color,select_best_thumbnail
 import random 
 
 """
@@ -55,7 +55,7 @@ def semitones(original_image, grid_size, background_color, dot_color):
         for i in range(num_steps + 1):
             diameter = int(i * max_diameter / num_steps)
             dot_image = generate_dot(diameter, grid_size, background_color, dot_color)
-            average_dot_grey = get_average_color(dot_image, 0, 0, dot_image.width, dot_image.height, 1)
+            average_dot_grey = get_average_color(dot_image, 0, 0, dot_image.width, dot_image.height, 1)[0]
             dot_grey = (average_dot_grey, average_dot_grey, average_dot_grey)            
             image_list.append((dot_grey, dot_image)) 
             if diameter == max_diameter:
@@ -65,7 +65,7 @@ def semitones(original_image, grid_size, background_color, dot_color):
             for j in range(0, original_image.height, grid_size):       #Generar el mosaico             
                 block_width = min(grid_size, original_image.width - i)
                 block_height = min(grid_size, original_image.height - j)                                         
-                zone_grey = get_average_color(grey_image, i, j, block_width, block_height, 1) 
+                zone_grey = get_average_color(grey_image, i, j, block_width, block_height, 1)[0] 
                 zone_color = (zone_grey, zone_grey, zone_grey,  255)          
                 best_thumbnail = select_best_thumbnail(image_list, zone_color, 2)                    
                 result_image.paste(best_thumbnail, (i, j))  
