@@ -331,6 +331,8 @@ def artistic_visual(version):
         
         elif version == 4: #Filtro de letras en color
             html_file, edited_image = FiltrosArtisticos.letters_filter(original_image, 5, 9, 2)
+        elif version == 5:
+            edited_image = FiltrosArtisticos.dices_filter(original_image, 8, (0,0,0), (255,255,255))    
        
         displayed_edited_image = edited_image.copy() 
         show_edited_image()
@@ -491,6 +493,8 @@ if __name__ == "__main__":
     artistic_submenu.add_command(label="Acuarela en gris", command=partial(multi_thread_popup, artistic_visual, (2,), root, "Acuarela en gris"))
     artistic_submenu.add_command(label="Letras en grises", command=partial(multi_thread_popup, artistic_visual, (3,), root, "Letras en grises"))
     artistic_submenu.add_command(label="Letras en color", command=partial(multi_thread_popup, artistic_visual, (4,), root, "Letras en color"))
+    artistic_submenu.add_command(label="Mosaico de dados", command=partial(multi_thread_popup, artistic_visual, (5,), root, "Mosaico de dados"))
+    
     #Submenú para filtros de redimensión
     resize_submenu = Menu(menu, tearoff=0)
     resize_submenu.add_command(label="Redimensionar al 25%", command=partial(multi_thread_popup, resize_visual, (1,), root, "Redimensionar al 25%"))

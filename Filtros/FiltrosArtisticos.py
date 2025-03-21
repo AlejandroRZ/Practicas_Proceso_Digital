@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont
 from Filtros import FiltrosColor
-from .FiltrosRecursivos import get_average_color
+from .FiltrosRecursivos import get_average_color, grey_scale
+from .FiltrosRecursivos import select_best_thumbnail
 """
 Implementación de un procesador de imágenes que aplica filtros básicos.
 Archivo en el que se definene funciones para filtros artisticos.
@@ -20,7 +21,7 @@ Versión 3.7
     
 """ 
 Función que aplica el filtro acuarela (conocido también como óleo).
-Este filtro recorre la imágen pixel a pixel y visita una vecindad cuadrada del mismo
+Este filtro recorre la imagen pixel a pixel y visita una vecindad cuadrada del mismo
 cuyo tamaño podemos definir, obtiene un histograma de los colores y asigna al pixel el color 
 más repetido o en su defecto, el color promedio de la vecindad.
 """  
@@ -75,7 +76,13 @@ def watercolor(original_image, matrix_size, version):
 
         return watercolor_image
     
-
+""" 
+Función que aplica el filtro de letras.
+Este filtro recorre la imágen pixel a pixel y visita una vecindad rectangular del mismo
+cuyo tamaño podemos definir, obtiene el color promedio de la región y con base en él
+genera un rectángulo con una letra del color promedio de la vecindad, con el cuál
+ha de sustituir los pixeles originales de la región.
+"""  
 def letters_filter(original_image, section_width, section_height, version):
     if original_image:
         original_image =  original_image.copy().convert("RGBA")
@@ -107,3 +114,63 @@ def letters_filter(original_image, section_width, section_height, version):
         html += "</pre>\n</body>\n</html>"
         return html, new_image
 
+"""
+Genera una imagen de una cara de un dado con el número de puntos especificado.
+Recibe el número de puntos en la cara del dado, el tamaño de los lados del recuadro,
+así como los colores de fondo y para los puntos.
+"""
+def generate_dice_face(value, square_length, background_color, dot_color):    
+    image = Image.new("RGBA", (square_length, square_length), background_color)
+    draw = ImageDraw.Draw(image)
+
+    # Coordenadas relativas de los puntos para cada cara del dado
+    dot_positions = {
+        1: [(0.5, 0.5)],
+        2: [(0.25, 0.25), (0.75, 0.75)],
+        3: [(0.25, 0.25), (0.5, 0.5), (0.75, 0.75)],
+        4: [(0.25, 0.25), (0.25, 0.75), (0.75, 0.25), (0.75, 0.75)],
+        5: [(0.25, 0.25), (0.25, 0.75), (0.5, 0.5), (0.75, 0.25), (0.75, 0.75)],
+        6: [(0.25, 0.25), (0.25, 0.5), (0.25, 0.75), (0.75, 0.25), (0.75, 0.5), (0.75, 0.75)]
+    }
+
+    diameter = square_length // 5  # Tamaño relativo de los puntos
+    
+    for x_factor, y_factor in dot_positions[value]:
+        x0 = int((x_factor * square_length) - diameter // 2)
+        y0 = int((y_factor * square_length) - diameter // 2)
+        x1 = x0 + diameter
+        y1 = y0 + diameter
+        draw.ellipse([x0, y0, x1, y1], fill=dot_color)
+
+    return image
+
+"""
+Reemplaza regiones de la imagen con caras de dados basadas en el gris promedio.
+Recibe la imagen a procesar, el tamaño de las regiones a reemplazar, así como
+los colores para la construcción de las caras de dado.
+"""
+def dices_filter(original_image, grid_size, background_color, dot_color):    
+    if original_image:
+        grey_image = grey_scale(original_image, 2)
+        result_image = Image.new("RGBA", original_image.size)
+
+        # Crear lista de imágenes con las 6 caras del dado
+        dice_faces = []
+        for i in range(1, 7):
+            dice_image = generate_dice_face(i, grid_size, background_color, dot_color)
+            average_grey = get_average_color(dice_image, 0, 0, dice_image.width, dice_image.height, 1)[0]
+            dice_faces.append(((average_grey, average_grey, average_grey), dice_image))
+
+        # Recorrer la imagen por bloques
+        for i in range(0, original_image.width, grid_size):
+            for j in range(0, original_image.height, grid_size):
+                block_width = min(grid_size, original_image.width - i)
+                block_height = min(grid_size, original_image.height - j)
+                zone_grey = get_average_color(grey_image, i, j, block_width, block_height, 1)[0]
+                zone_color = (zone_grey, zone_grey, zone_grey, 255)
+                
+                # Seleccionar la cara del dado más cercana en gris
+                best_thumbnail = select_best_thumbnail(dice_faces, zone_color, 2)
+                result_image.paste(best_thumbnail, (i, j))
+
+        return result_image
