@@ -316,11 +316,97 @@ matriz_bsharp = [
 fact_bsharp = 1.0 / 8.0
 bias_bsharp = 0.0
 
+#Explora la vecindad de los pixeles en la marca de agua y 
+#los reemplaza por el color de gris más próximo que les corresponda.
+def reemplazar_por_gris_mas_cercano(imagen, marca):
+    nueva_imagen = imagen.copy()
+    pixeles = nueva_imagen.load()
+    marca_px = marca.load()
+    ancho, alto = imagen.size
+
+    for y in range(alto):
+        for x in range(ancho):
+            r, g, b = marca_px[x, y]
+            if r > g + 40 and r > b + 40:
+                # Buscar el gris más cercano
+                gris = int((g + b) / 2)
+                pixeles[x, y] = (gris, gris, gris)
+    return nueva_imagen
+
+#Explora la vecindad de los pixeles en la marca de agua y 
+#reemplaza su color por el de aquel más común entre sus vecinos.
+def reemplazar_por_vecinos_dominantes(imagen, marca, tamano_matriz):
+    nueva_imagen = imagen.copy()
+    pixeles = nueva_imagen.load()
+    marca_px = marca.load()
+    ancho, alto = imagen.size
+
+    radio = tamano_matriz // 2
+
+    for y in range(alto):
+        for x in range(ancho):
+            r, g, b = marca_px[x, y]
+            if (r, g, b) != (255, 255, 255):  # Solo pixeles con marca
+                vecinos = {}
+                for dy in range(-radio, radio + 1):
+                    for dx in range(-radio, radio + 1):
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < ancho and 0 <= ny < alto:
+                            pr, pg, pb = pixeles[nx, ny]
+                            if not (pr > pg + 40 and pr > pb + 40):  # evitar rojos
+                                color = (pr, pg, pb)
+                                if color in vecinos:
+                                    vecinos[color] += 1
+                                else:
+                                    vecinos[color] = 1
+                if vecinos:
+                    # Buscar el color con mayor frecuencia manualmente
+                    color_mas_comun = None
+                    max_repeticiones = 0
+                    for color, conteo in vecinos.items():
+                        if conteo > max_repeticiones:
+                            color_mas_comun = color
+                            max_repeticiones = conteo
+                    pixeles[x, y] = color_mas_comun
+    return nueva_imagen
+
+#Auxiliar para obtener la distancia entre colores.
+def distancia_rgb(c1, c2):
+    return sum((a - b) ** 2 for a, b in zip(c1, c2))
+
+#Explora la vecindad de los pixeles en la marca de agua y 
+#reemplaza su color por el de aquel que le quede más cerca.
+def reemplazar_por_vecino_mas_cercano(imagen, marca, tamano_matriz):
+    nueva_imagen = imagen.copy()
+    pixeles = nueva_imagen.load()
+    marca_px = marca.load()
+    ancho, alto = imagen.size
+    radio = tamano_matriz // 2
+    for y in range(alto):
+        for x in range(ancho):
+            r, g, b = marca_px[x, y]
+            if r > g + 40 and r > b + 40:
+                color_original = pixeles[x, y]
+                mejor_color = None
+                menor_distancia = float('inf')
+                for dy in range(-radio, radio + 1):
+                    for dx in range(-radio, radio + 1):
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < ancho and 0 <= ny < alto:
+                            pr, pg, pb = pixeles[nx, ny]
+                            if not (pr > pg + 40 and pr > pb + 40):
+                                dist = distancia_rgb(color_original, (pr, pg, pb))
+                                if dist < menor_distancia:
+                                    menor_distancia = dist
+                                    mejor_color = (pr, pg, pb)
+                if mejor_color:
+                    pixeles[x, y] = mejor_color
+    return nueva_imagen
 
 
 if __name__ == '__main__':
 ################################################################Primer reto################################################################
-    imagen = Image.open("primero.jpg")
+    imagen = Image.open("primero.jpeg")
     primer_marca = extraer_rojo(imagen)
     zonas_primer_marca = encontrar_zonas_conexas(primer_marca)
     primer_marca = eliminar_zonas_pequenas(primer_marca, zonas_primer_marca, 500)
@@ -349,7 +435,7 @@ if __name__ == '__main__':
     imagen_reto1.save("primer_reto.png")
 
     ################################################################Segundo reto################################################################
-    imagen2 = Image.open("segundo.jpg")
+    imagen2 = Image.open("segundo.jpeg")
     segunda_marca = extraer_rojo(imagen2)
     zonas_segunda_marca = encontrar_zonas_conexas(segunda_marca)
     segunda_marca = eliminar_zonas_pequenas(segunda_marca, zonas_segunda_marca, 100)
@@ -386,7 +472,7 @@ if __name__ == '__main__':
 
 
     ################################################################Tercer reto################################################################
-    imagen3 = Image.open("tercero.jpg")
+    imagen3 = Image.open("tercero.jpeg")
     tercera_marca = extraer_rojo(imagen3)
     zonas_tercera_marca = encontrar_zonas_conexas(tercera_marca)
     tercera_marca = eliminar_zonas_pequenas(tercera_marca, zonas_tercera_marca, 100)
@@ -409,3 +495,30 @@ if __name__ == '__main__':
     imagen_reto3 = fusionar_imagenes_por_marca(imagen_reto3, copia_mezcla3, tercera_marca)
     imagen_reto3 = convolucion_paralela(imagen_reto3, tercera_marca, matriz_media, fact_m, bias_m)
     imagen_reto3.save("tercer_reto.png")
+
+
+    ################################################################Cuarto reto################################################################
+
+    imagen4 = Image.open("cuarto.jpg")
+    cuarta_marca = extraer_rojo(imagen4) 
+    cuarta_marca = eliminar_pixeles_grises(cuarta_marca, 15)
+    imagen4_temporal = barrer_marca_agua(imagen4,cuarta_marca, 7) 
+    
+    for i in range (10):
+        cuarta_marca = extraer_rojo(imagen4_temporal) 
+        cuarta_marca = eliminar_pixeles_grises(cuarta_marca, 75)
+        imagen4_temporal = barrer_marca_agua(imagen4_temporal, cuarta_marca, 7)  
+    
+    cuarta_marca = extraer_rojo(imagen4_temporal) 
+    cuarta_marca = eliminar_pixeles_grises(cuarta_marca, 15)
+    imagen4_temporal = barrer_marca_agua(imagen4_temporal,cuarta_marca, 7) 
+
+    imagen4_temporal = reemplazar_por_vecinos_dominantes(imagen4_temporal, cuarta_marca, 3)
+    imagen4_temporal = reemplazar_por_vecinos_dominantes(imagen4_temporal, cuarta_marca, 3)
+    imagen4_temporal = convolucion_paralela(imagen4_temporal, cuarta_marca, matriz_bsharp, fact_bsharp, bias_bsharp)
+    
+    for i in range (5):
+        imagen4_temporal = reemplazar_por_vecino_mas_cercano(imagen4_temporal, cuarta_marca, 3)  
+
+    imagen4_temporal.save("cuarto_reto.png")
+    
